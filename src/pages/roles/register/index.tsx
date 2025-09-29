@@ -6,15 +6,15 @@ import { useDispatch } from 'react-redux'
 import { AppDispatch } from "src/store"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from '@hookform/resolvers/yup'
-import { RolType } from "src/types/types"
 import { addRol, updateRol } from "src/store/role"
+import { Rol } from "src/context/types"
 
 interface Props {
     toggle: () => void
     page: number
     pageSize: number
     mode?: 'create' | 'edit'
-    defaultValues?: RolType
+    defaultValues?: Rol
 }
 
 const showErrors = (field: string, valueLen: number, min: number) => {
@@ -56,14 +56,14 @@ const AddRol = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Prop
         reset(defaultValues)
     }, [defaultValues, mode])
 
-    const onSubmit = (data: RolType) => {
+    const onSubmit = (data: Rol) => {
         if (mode === 'edit' && defaultValues?._id) {
-            delete data._id
-            delete data.__v
-            delete data.permissions
-            dispatch(updateRol({ data, id: defaultValues._id, filtrs: { skip: page * pageSize, limit: pageSize } }))
+            const { _id, __v, permissions, ...newData } = data
+            dispatch(updateRol({ data: newData, id: defaultValues._id, filtrs: { skip: page * pageSize, limit: pageSize } }))
         } else {
-            dispatch(addRol({ data, filtrs: { skip: page * pageSize, limit: pageSize } }))
+
+            const { _id, __v, permissions, ...newData } = data
+            dispatch(addRol({ data: newData, filtrs: { skip: page * pageSize, limit: pageSize } }))
         }
         toggle()
         reset()

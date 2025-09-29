@@ -1,4 +1,4 @@
-import React, { useState, MouseEvent, useEffect, ChangeEvent } from 'react'
+import React, { useState, MouseEvent, useEffect, ChangeEvent, Fragment } from 'react'
 import { Box, Button, Card, CardHeader, FormControl, Grid, IconButton, TextField, Typography } from '@mui/material'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
@@ -16,29 +16,10 @@ import AddUser from './register'
 import { UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
 
-interface TypeRol {
-    name: string
-    _id?: string
-}
-interface TypeGender {
-    name: string
-    _id: string
-}
-interface UsersType {
-    _id: string;
-    name: string;
-    lastName: string;
-    ci: string;
-    address: string;
-    phone: string;
-    gender: TypeGender;
-    email: string;
-    status: string;
-    rol: TypeRol;
-}
+
 
 interface CellType {
-    row: UsersType
+    row: UserType
 }
 interface UserRoleType {
     [key: string]: { icon: string; color: string }
@@ -49,7 +30,9 @@ const userRoleObj: UserRoleType = {
     other: { icon: 'mdi:account-outline', color: 'info.main' }
 }
 
-const renderClient = (row: UsersType) => {
+
+
+const renderClient = (row: UserType) => {
 
     return (
         <CustomAvatar
@@ -62,7 +45,19 @@ const renderClient = (row: UsersType) => {
     )
 }
 
-const defaultValues: UserType = {
+interface DefaultUserType {
+    name: string,
+    lastName: string,
+    gender: string,
+    email: string,
+    ci: string,
+    phone: string,
+    address: string,
+    password: string,
+    rol: string[]
+}
+
+const defaultValues: DefaultUserType = {
     name: '',
     lastName: '',
     gender: '',
@@ -71,17 +66,16 @@ const defaultValues: UserType = {
     phone: '',
     address: '',
     password: '',
-    otherGender: '',
-    rol: ''
+    rol: []
 }
 const Users = () => {
 
     const [pageSize, setPageSize] = useState<number>(10)
     const [page, setPage] = useState<number>(0)
     const [drawOpen, setDrawOpen] = useState<boolean>(false)
-    const [filters, setFilters] = useState<string>('')
+    const [field, setField] = useState<string>('')
     const [mode, setMode] = useState<'create' | 'edit'>('create')
-    const [userData, setUserData] = useState<UserType>(defaultValues)
+    const [userData, setUserData] = useState<DefaultUserType>(defaultValues)
 
     const columns = [
         {
@@ -147,7 +141,7 @@ const Users = () => {
             headerName: 'Género',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography noWrap variant='body2'>{row.gender?.name}</Typography>
+                    <Typography noWrap variant='body2'>{row.gender}</Typography>
                 )
             }
         },
@@ -159,17 +153,23 @@ const Users = () => {
             renderCell: ({ row }: CellType) => {
                 return (
                     <Box>
-                        {!row.rol ? 'Niguno' :
-                            <Box sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                '& svg': { mr: 3, color: userRoleObj[row.rol.name == 'Admin' ? 'admin' : row.rol.name == 'User' ? 'user' : 'other'].color }
-                            }}>
-                                <Icon icon={userRoleObj[row.rol.name == 'Admin' ? 'admin' : row.rol.name == 'User' ? 'user' : 'other'].icon} fontSize={20} />
-                                <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
-                                    {row.rol.name}
-                                </Typography>
-                            </Box>
+                        {row.rol.length == 0 ? 'Niguno' :
+                            <Fragment>
+                                {
+                                    row.rol.map((rol) => (
+                                        <Box key={rol.name} sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            '& svg': { mr: 3, color: userRoleObj[rol.name || 'other'].color }
+                                        }}>
+                                            <Icon icon={userRoleObj[rol.name || 'other'].icon} fontSize={20} />
+                                            <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
+                                                {rol.name}
+                                            </Typography>
+                                        </Box>
+                                    ))
+                                }
+                            </Fragment>
                         }
                     </Box>
                 )
@@ -201,7 +201,7 @@ const Users = () => {
             }
         }
     ]
-    const RowOptions = ({ user }: { user: UsersType }) => {
+    const RowOptions = ({ user }: { user: UserType }) => {
 
         const dispatch = useDispatch<AppDispatch>()
         const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -224,7 +224,7 @@ const Users = () => {
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#ff4040',
                 confirmButtonText: 'Dar de baja',
-            }).then(async (result) => { return await result.isConfirmed });
+            }).then((result) => { return result.isConfirmed });
             if (confirme) {
                 dispatch(dowUser({ filters: { filter: '', skip: page * pageSize, limit: pageSize }, id: user._id }))
             }
@@ -240,25 +240,25 @@ const Users = () => {
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#72E128',
                 confirmButtonText: 'reincorporar',
-            }).then(async (result) => { return await result.isConfirmed });
+            }).then((result) => { return result.isConfirmed });
             if (confirme) {
                 dispatch(upUser({ filters: { filter: '', skip: page * pageSize, limit: pageSize }, id: user._id }))
             }
         }
 
-
         const handleEdit = () => {
+            const rol = user.rol?.map(role => role._id) || [];
+
             setUserData({
                 ...user,
-                gender: user.gender?._id || '',
-                rol: user.rol?._id || '',
-                password: '',
-                otherGender: ''
-            })
-            setMode('edit')
-            setAnchorEl(null)
-            toggleDrawer()
-        }
+                rol
+            });
+
+            setMode('edit');
+            setAnchorEl(null);
+            toggleDrawer();
+        };
+
 
         return (
             <>
@@ -304,7 +304,7 @@ const Users = () => {
 
     const store = useSelector((state: RootState) => state.user)
     useEffect(() => {
-        dispatch(fetchData({ filter: '', skip: page * pageSize, limit: pageSize }))
+        dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
     }, [pageSize, page])
 
     const handleCreate = () => {
@@ -316,53 +316,79 @@ const Users = () => {
 
     const toggleDrawer = () => setDrawOpen(!drawOpen)
     const handleFilters = () => {
-        dispatch(fetchData({ filter: filters, skip: page * pageSize, limit: pageSize }))
+        dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
     }
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>
                 <Card>
-                    <CardHeader title='Registro de usuarios' sx={{ pb: 0, '& .MuiCardHeader-title': { letterSpacing: '.15px' } }} />
-                    <Box
-                        sx={{
-                            p: 5,
-                            pb: 3,
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <TextField
-                                label="Buscar"
-                                variant="outlined"
-                                name="search"
-                                autoComplete="off"
-                                value={filters}
-                                onChange={(e) => setFilters(e.target.value)}
-                                InputProps={{
-                                    startAdornment: <Icon icon="mdi:search" />,
-                                }}
-                            />
+                    <Box sx={{ p: 5, pb: 0 }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                alignItems: { xs: 'stretch', sm: 'center' },
+                                flexWrap: 'nowrap',
+                                gap: 10,
+                                width: '100%',
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', flex: 1 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Buscar"
+                                    variant="outlined"
+                                    name="search"
+                                    autoComplete="off"
+                                    value={field}
+                                    onChange={(e) => setField(e.target.value)}
+                                    sx={{
+                                        flex: 1,
+                                        '& .MuiInputBase-root': {
+                                            borderTopRightRadius: 0,
+                                            borderBottomRightRadius: 0,
+                                        }
+                                    }}
+                                />
 
+                                <Button
+                                    variant="outlined"
+                                    onClick={handleFilters}
+                                    startIcon={<Icon icon='mdi:search' />}
+                                    sx={{
+                                        borderRadius: 0,
+                                        borderLeft: 1
+                                    }}
+                                >
+                                    Buscar
+                                </Button>
+
+                                <Button
+                                    variant="contained"
+                                    sx={{
+                                        borderTopLeftRadius: 0,
+                                        borderBottomLeftRadius: 0
+                                    }}
+                                >
+                                    Todos
+                                </Button>
+                            </Box>
                             <Button
-                                variant="outlined"
-                                onClick={handleFilters}
+                                onClick={handleCreate}
+                                variant="contained"
+                                color='success'
+                                startIcon={<Icon icon='mdi:add' />}
+                                sx={{ p: 3.5 }}
                             >
-                                Buscar
+                                Nuevo usuario
                             </Button>
                         </Box>
-
-                        <Button
-                            sx={{ mt: { xs: 2, sm: 0 } }}
-                            onClick={handleCreate}
-                            variant="contained"
-                        >
-                            Nuevo usuario
-                        </Button>
                     </Box>
-
+                    <Box sx={{ p: 5 }}>
+                        <Typography variant='subtitle2'>
+                            Lista de usuarios
+                        </Typography>
+                    </Box>
                     <DataGrid
                         autoHeight
                         rows={store.data}

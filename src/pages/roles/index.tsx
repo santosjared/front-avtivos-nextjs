@@ -7,19 +7,20 @@ import AddDraw from 'src/components/draw';
 import { AppDispatch, RootState } from 'src/store';
 import { deleteRol, fetchData } from 'src/store/role';
 import AddRol from './register';
-import { RolType } from 'src/types/types';
 import Swal from 'sweetalert2';
 import Permissions from './permissions';
+import { Rol } from 'src/context/types';
 
 interface CellType {
-    row: RolType
+    row: Rol
 }
 
-
-
-const defaultValues: RolType = {
+const defaultValues: Rol = {
     name: '',
-    description: ''
+    description: '',
+    permissions: [],
+    _id: '',
+    __v: ''
 }
 
 const Roles = () => {
@@ -27,36 +28,25 @@ const Roles = () => {
     const [drawOpen, setDrawOpen] = useState<boolean>(false)
     const [pageSize, setPageSize] = useState<number>(10)
     const [page, setPage] = useState<number>(0)
-    const [filters, setFilters] = useState<string>('')
+    const [field, setField] = useState<string>('')
     const [mode, setMode] = useState<'create' | 'edit'>('create')
-    const [rolData, setRolData] = useState<RolType>(defaultValues)
+    const [rolData, setRolData] = useState<Rol>(defaultValues)
     const [openPermissons, setOpenPermissions] = useState<boolean>(false)
 
-    const RowOptions = ({ rol }: { rol: RolType }) => {
+    const RowOptions = ({ rol }: { rol: Rol }) => {
 
         const dispatch = useDispatch<AppDispatch>()
-        const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-        const rowOptionsOpen = Boolean(anchorEl)
-
-        const handleRowOptionsClick = (event: MouseEvent<HTMLElement>) => {
-            setAnchorEl(event.currentTarget)
-        }
-        const handleRowOptionsClose = () => {
-            setAnchorEl(null)
-        }
         const handleEdit = () => {
             setRolData(rol)
             setMode('edit')
-            setAnchorEl(null)
             toggleDrawer()
         }
         const handlePermissions = () => {
             setRolData(rol)
-            setAnchorEl(null)
             togglePermissions()
         }
         const handleDelete = async () => {
-            setAnchorEl(null)
+
             const confirme = await Swal.fire({
                 title: '¿Estas seguro de eliminar?',
                 icon: "warning",
@@ -72,39 +62,17 @@ const Roles = () => {
         }
 
         return (
-            <>
-                <IconButton size='small' onClick={handleRowOptionsClick}>
-                    <Icon icon='mdi:dots-vertical' />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <IconButton size='small' onClick={handleEdit}>
+                    <Icon icon='mdi:pencil-outline' fontSize={20} color='#00a0f4' />
                 </IconButton>
-                <Menu
-                    keepMounted
-                    anchorEl={anchorEl}
-                    open={rowOptionsOpen}
-                    onClose={handleRowOptionsClose}
-                    anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'right'
-                    }}
-                    transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'right'
-                    }}
-                    PaperProps={{ style: { minWidth: '8rem' } }}
-                >
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleEdit}>
-                        <Icon icon='mdi:pencil-outline' fontSize={20} color='#00a0f4' />
-                        Editar
-                    </MenuItem>
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleDelete}>
-                        <Icon icon='ic:outline-delete' fontSize={20} color='#ff4040' />
-                        Eliminar
-                    </MenuItem>
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handlePermissions}>
-                        <Icon icon='material-symbols:key-vertical-rounded' fontSize={20} color='#6D788D' />
-                        Permisos
-                    </MenuItem>
-                </Menu>
-            </>
+                <IconButton size='small' onClick={handleDelete}>
+                    <Icon icon='ic:outline-delete' fontSize={20} color='#ff4040' />
+                </IconButton>
+                <IconButton size='small' onClick={handlePermissions}>
+                    <Icon icon='material-symbols:key-vertical-rounded' fontSize={20} color='#9f9f0baa' />
+                </IconButton>
+            </Box>
         )
     }
     const columns = [
@@ -161,54 +129,83 @@ const Roles = () => {
     }
 
     const handleFilters = () => {
-        dispatch(fetchData({ filter: filters, skip: page * pageSize, limit: pageSize }))
+        dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
     }
 
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>
                 <Card>
-                    <CardHeader title='Registro de roles y permisos' sx={{ pb: 0, '& .MuiCardHeader-title': { letterSpacing: '.15px' } }} />
-                    <Box
-                        sx={{
-                            p: 5,
-                            pb: 3,
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <TextField
-                                label="Buscar"
-                                variant="outlined"
-                                name="search"
-                                autoComplete="off"
-                                value={filters}
-                                onChange={(e) => setFilters(e.target.value)}
-                                InputProps={{
-                                    startAdornment: <Icon icon="mdi:search" />,
-                                }}
-                            />
+                    <Box sx={{ p: 5, pb: 0 }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                alignItems: { xs: 'stretch', sm: 'center' },
+                                flexWrap: 'nowrap',
+                                gap: 10,
+                                width: '100%',
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', flex: 1 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Buscar"
+                                    variant="outlined"
+                                    name="search"
+                                    autoComplete="off"
+                                    value={field}
+                                    onChange={(e) => setField(e.target.value)}
+                                    InputProps={{
+                                        endAdornment: <Icon icon="mdi:search" />,
+                                    }}
+                                    sx={{
+                                        flex: 1,
+                                        '& .MuiInputBase-root': {
+                                            borderTopRightRadius: 0,
+                                            borderBottomRightRadius: 0,
+                                        }
+                                    }}
+                                />
 
+                                <Button
+                                    variant="outlined"
+                                    onClick={handleFilters}
+                                    startIcon={<Icon icon='mdi:search' />}
+                                    sx={{
+                                        borderRadius: 0,
+                                        borderLeft: 1
+                                    }}
+                                >
+                                    Buscar
+                                </Button>
+
+                                <Button
+                                    variant="contained"
+                                    sx={{
+                                        borderTopLeftRadius: 0,
+                                        borderBottomLeftRadius: 0
+                                    }}
+                                >
+                                    Todos
+                                </Button>
+                            </Box>
                             <Button
-                                variant="outlined"
-                                onClick={handleFilters}
+                                onClick={handleCreate}
+                                variant="contained"
+                                startIcon={<Icon icon='mdi:add' />}
+                                color='success'
+                                sx={{ p: 3.5 }}
                             >
-                                Buscar
+                                Nuevo Rol
                             </Button>
                         </Box>
-
-                        <Button
-                            sx={{ mt: { xs: 2, sm: 0 } }}
-                            onClick={handleCreate}
-                            variant="contained"
-                        >
-                            Nuevo Rol
-                        </Button>
                     </Box>
-
+                    <Box sx={{ p: 5 }}>
+                        <Typography variant='subtitle2'>
+                            Lista de roles
+                        </Typography>
+                    </Box>
                     <DataGrid
                         autoHeight
                         rows={store.data}

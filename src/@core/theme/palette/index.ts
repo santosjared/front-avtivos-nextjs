@@ -1,23 +1,15 @@
 // ** Type Imports
+
+
+
+
 import { PaletteMode } from '@mui/material'
-import { Skin } from 'src/@core/layouts/types'
 
-const DefaultPalette = (mode: PaletteMode, skin: Skin) => {
-  // ** Vars
-  const whiteColor = '#f5f9f7'
+const DefaultPalette = (mode: PaletteMode) => {
+
   const lightColor = '76, 78, 100'
-  const darkColor = '234, 234, 255'
+  const darkColor = '255, 255, 255'
   const mainColor = mode === 'light' ? lightColor : darkColor
-
-  const defaultBgColor = () => {
-    if (skin === 'bordered' && mode === 'light') {
-      return whiteColor
-    } else if (skin === 'bordered' && mode === 'dark') {
-      return '#30334E'
-    } else if (mode === 'light') {
-      return '#f2f7f5'
-    } else return '#282A42'
-  }
 
   return {
     customColors: {
@@ -26,51 +18,52 @@ const DefaultPalette = (mode: PaletteMode, skin: Skin) => {
       light: lightColor,
       darkBg: '#282A42',
       lightBg: '#F7F7F9',
-      bodyBg: mode === 'light' ? '#F7F7F9' : '#282A42', // Same as palette.background.default but doesn't consider bordered skin
+      bodyBg: mode === 'light' ? '#F7F7F9' : '#282A42',
       trackBg: mode === 'light' ? '#F2F2F4' : '#41435C',
       tooltipBg: mode === 'light' ? '#262732' : '#464A65',
+      circularBg: mode === 'light' ? 'rgba(255,255,255,0.1)' : 'rgba(15, 15, 15, 0.05)',
       tableHeaderBg: mode === 'light' ? '#F5F5F7' : '#3A3E5B'
     },
     mode: mode,
     common: {
-      black: '#000',
-      white: whiteColor
+      black: '#000000',
+      white: '#ffffff'
     },
     primary: {
-      light: '#5D87FF',
-      main: '#666CFF',
-      dark: '#4570EA',
-      contrastText: whiteColor
+      light: '#ff2e2eff',
+      main: '#FF4D49',
+      dark: '#c40700ff',
+      contrastText: '#ffffff'
     },
     secondary: {
       light: '#7F889B',
       main: '#6D788D',
       dark: '#606A7C',
-      contrastText: whiteColor
+      contrastText: '#ffffff'
     },
     error: {
       light: '#FF625F',
       main: '#FF4D49',
       dark: '#E04440',
-      contrastText: whiteColor
+      contrastText: '#ffffff'
     },
     warning: {
       light: '#FDBE42',
       main: '#FDB528',
       dark: '#DF9F23',
-      contrastText: whiteColor
+      contrastText: '#ffffff'
     },
     info: {
       light: '#40CDFA',
       main: '#26C6F9',
       dark: '#21AEDB',
-      contrastText: whiteColor
+      contrastText: '#ffffff'
     },
     success: {
-      light: '#83E542',
-      main: '#72E128',
-      dark: '#64C623',
-      contrastText: whiteColor
+      light: '#81c784',
+      main: '#4caf50',
+      dark: '#388e3c',
+      contrastText: '#ffffff'
     },
     grey: {
       50: '#FAFAFA',
@@ -95,8 +88,9 @@ const DefaultPalette = (mode: PaletteMode, skin: Skin) => {
     },
     divider: `rgba(${mainColor}, 0.12)`,
     background: {
-      paper: mode === 'light' ? whiteColor : '#30334E',
-      default: defaultBgColor()
+      paper: mode === 'light' ? '#e6e6e6ff' : '#30334E',
+      default: mode === 'light' ? '#cbcad0ff' : '#282A42',
+
     },
     action: {
       active: `rgba(${mainColor}, 0.54)`,

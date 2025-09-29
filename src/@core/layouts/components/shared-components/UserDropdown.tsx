@@ -22,6 +22,8 @@ import { useAuth } from 'src/hooks/useAuth'
 
 // ** Type Imports
 import { Settings } from 'src/@core/context/settingsContext'
+import { useSelector } from 'react-redux'
+import { RootState } from 'src/store'
 
 interface Props {
   settings: Settings
@@ -45,9 +47,9 @@ const UserDropdown = (props: Props) => {
 
   // ** Hooks
   const router = useRouter()
-  const { logout, user } = useAuth()
+  const { logout } = useAuth()
+  const { user } = useSelector((state: RootState) => state.auth)
 
-  // ** Vars
   const { direction } = settings
 
   const handleDropdownOpen = (event: SyntheticEvent) => {
@@ -97,7 +99,7 @@ const UserDropdown = (props: Props) => {
           alt='John Doe'
           onClick={handleDropdownOpen}
           sx={{ width: 40, height: 40 }}
-          src='/images/avatars/1.png'
+          src={user?.profile}
         />
       </Badge>
       <Menu
@@ -118,12 +120,12 @@ const UserDropdown = (props: Props) => {
                 horizontal: 'right'
               }}
             >
-              <Avatar alt='John Doe' src='/images/avatars/1.png' sx={{ width: '2.5rem', height: '2.5rem' }} />
+              <Avatar alt='John Doe' src={user?.profile} sx={{ width: '2.5rem', height: '2.5rem' }} />
             </Badge>
             <Box sx={{ display: 'flex', ml: 3, alignItems: 'flex-start', flexDirection: 'column' }}>
               <Typography sx={{ fontWeight: 600 }}>{user?.name} {user?.lastName}</Typography>
               <Typography variant='body2' sx={{ fontSize: '0.8rem', color: 'text.disabled' }}>
-                {user?.role.name}
+                {user?.rol.name}
               </Typography>
             </Box>
           </Box>

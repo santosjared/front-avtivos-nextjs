@@ -1,5 +1,6 @@
 // ** MUI Imports
 import { Theme } from '@mui/material/styles'
+import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
 
 const DataGrid = (theme: Theme) => {
   return {
@@ -7,7 +8,7 @@ const DataGrid = (theme: Theme) => {
       styleOverrides: {
         root: {
           border: 0,
-          color: theme.palette.text.primary,
+          color: 'text.secondary',
           '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
             outline: 'none'
           }
@@ -18,7 +19,8 @@ const DataGrid = (theme: Theme) => {
         },
         columnHeaders: {
           lineHeight: '24px !important',
-          backgroundColor: theme.palette.customColors.tableHeaderBg
+          color: theme.palette.text.primary,
+          backgroundColor: hexToRGBA(theme.palette.secondary.light, 0.2),
         },
         columnHeader: {
           '&:not(.MuiDataGrid-columnHeaderCheckbox)': {
