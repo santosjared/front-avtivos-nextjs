@@ -28,18 +28,6 @@ const navigation = (): VerticalNavItemsType => {
       icon: 'mdi:bank-outline'
     },
     {
-      title: 'Grupos contables',
-      path: '/accountants',
-      subject: 'accountants',
-      icon: 'mdi:bus-stop-uncovered'
-    },
-    {
-      title: 'Calcular depreciación',
-      path: '/depreciation',
-      subject: 'depreciation',
-      icon: 'mdi:bus-stop-uncovered'
-    },
-    {
       title: 'Entrega de activos',
       path: '/borrowing',
       subject: 'borrowing',
@@ -50,7 +38,25 @@ const navigation = (): VerticalNavItemsType => {
       path: '/return',
       subject: 'return',
       icon: 'mdi:human-dolly'
-    }
+    },
+    {
+      title: 'Grupos contables',
+      path: '/accountants',
+      subject: 'accountants',
+      icon: 'mdi:monitor-cellphone'
+    },
+    {
+      title: 'Depreciación',
+      path: '/depreciation',
+      subject: 'depreciation',
+      icon: 'mdi:alarm-panel-outline'
+    },
+    {
+      title: 'Bitacoras',
+      path: '/depreciation',
+      subject: 'depreciation',
+      icon: 'mdi:dns-outline'
+    },
   ]
 }
 

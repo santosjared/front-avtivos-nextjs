@@ -2,18 +2,32 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import { instance } from 'src/configs/axios'
 import Swal from 'sweetalert2'
 
-interface Activo {
-    _id?: string
-    code: string
+
+interface CategoryType {
+    _id: string
     name: string
-    location: string
-    price_a: number
-    lote: string
-    cantidad: number
-    date_a: string
-    date_e: string
-    status?: string
-    imageUrl?: string
+}
+
+interface StatusType {
+    _id: string
+    name: string
+}
+
+interface ActivosType {
+    code: string,
+    name: string,
+    location: string,
+    price_a: number,
+    date_a: string,
+    date_e: string,
+    cantidad: number,
+    image: File | null,
+    imageUrl: string | null,
+    status: StatusType
+    otherStatus: string,
+    category: CategoryType
+    otherCategory: string
+    description: string
 }
 
 interface FetchParams {
@@ -23,7 +37,7 @@ interface FetchParams {
 }
 
 interface ActivosState {
-    data: Activo[]
+    data: ActivosType[]
     total: number
     loading: boolean
     error: string | null
@@ -69,6 +83,7 @@ export const addActivos = createAsyncThunk(
                 text: 'Error al crear activo',
                 icon: 'error',
             })
+            console.log(e)
             throw e
         }
     }

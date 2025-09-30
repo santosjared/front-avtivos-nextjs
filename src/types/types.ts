@@ -8,6 +8,8 @@ export type UserType = {
     ci: string,
     phone: string,
     address: string,
+    grade: string,
+    exp: string
     password: string,
     rol: Rol[]
     status: string

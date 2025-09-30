@@ -53,6 +53,8 @@ interface DefaultUserType {
     ci: string,
     phone: string,
     address: string,
+    exp: string,
+    grade: string
     password: string,
     rol: string[]
 }
@@ -65,6 +67,8 @@ const defaultValues: DefaultUserType = {
     ci: '',
     phone: '',
     address: '',
+    exp: '',
+    grade: '',
     password: '',
     rol: []
 }
@@ -80,26 +84,40 @@ const Users = () => {
     const columns = [
         {
             flex: 0.2,
-            minWidth: 230,
-            field: 'fullName',
-            headerName: 'Nombres y Apellidos',
+            minWidth: 90,
+            field: 'grade',
+            headerName: 'Grado',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {renderClient(row)}
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}>
-                            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: theme => `${theme.palette.text.secondary}` }}>{`${row.name} ${row.lastName}`}</Typography>
-                            <Typography noWrap variant='caption'>
-                                {row.email}
-                            </Typography>
-                        </Box>
-                    </Box>
+                    <Typography variant='body2'>{row.grade}</Typography>
                 )
             }
         },
         {
             flex: 0.2,
-            minWidth: 90,
+            minWidth: 190,
+            field: 'name',
+            headerName: 'Nombres',
+            renderCell: ({ row }: CellType) => {
+                return (
+                    <Typography variant='body2'>{row.name}</Typography>
+                )
+            }
+        },
+        {
+            flex: 0.2,
+            minWidth: 220,
+            field: 'lastname',
+            headerName: 'Apellidos',
+            renderCell: ({ row }: CellType) => {
+                return (
+                    <Typography variant='body2'>{row.lastName}</Typography>
+                )
+            }
+        },
+        {
+            flex: 0.2,
+            minWidth: 110,
             field: 'ci',
             sortable: false,
             headerName: 'CI',
@@ -111,7 +129,18 @@ const Users = () => {
         },
         {
             flex: 0.2,
-            minWidth: 90,
+            minWidth: 50,
+            field: 'exp',
+            headerName: 'Expedido',
+            renderCell: ({ row }: CellType) => {
+                return (
+                    <Typography variant='body2'>{row.exp}</Typography>
+                )
+            }
+        },
+        {
+            flex: 0.2,
+            minWidth: 160,
             field: 'address',
             sortable: false,
             headerName: 'Dirección',
@@ -160,9 +189,9 @@ const Users = () => {
                                         <Box key={rol.name} sx={{
                                             display: 'flex',
                                             alignItems: 'center',
-                                            '& svg': { mr: 3, color: userRoleObj[rol.name || 'other'].color }
+                                            '& svg': { mr: 3, color: userRoleObj[rol.name != 'admin' && rol.name != 'user' ? 'other' : rol.name].color }
                                         }}>
-                                            <Icon icon={userRoleObj[rol.name || 'other'].icon} fontSize={20} />
+                                            <Icon icon={userRoleObj[rol.name != 'admin' && rol.name != 'user' ? 'other' : rol.name].icon} fontSize={20} />
                                             <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
                                                 {rol.name}
                                             </Typography>

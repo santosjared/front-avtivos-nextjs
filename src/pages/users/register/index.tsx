@@ -30,7 +30,9 @@ interface DefaultUserType {
     lastName: string,
     gender: string,
     email: string,
+    grade: string,
     ci: string,
+    exp: string
     phone: string,
     address: string,
     password: string,
@@ -66,6 +68,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
     const [roles, setRoles] = useState<Rol[]>([])
 
     const schema = yup.object().shape({
+        grade: yup.string().required('El campo grado es requerido'),
         name: yup.string().required('El campo nombres es requerido')
             .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El nombre solo debe contener letras')
             .min(4, obj => showErrors('nombres', obj.value.length, obj.min)),
@@ -76,6 +79,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
             .required('El campo correo electrónico es requerido'),
         ci: yup.string().required('El campo ci es requerido')
             .min(4, obj => showErrors('ci', obj.value.length, obj.min)),
+        exp: yup.string().required('Seleccione la expedición del carnet'),
         phone: yup
             .number()
             .typeError('El celular debe ser un número')
@@ -138,7 +142,6 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
 
 
     const onSubmit = (data: DefaultUserType) => {
-
         if (mode === 'edit' && defaultValues?._id) {
             const { _id, __v, ...newData } = data
             dispatch(updateUser({ data: newData, id: defaultValues._id, filtrs: { skip: page * pageSize, limit: pageSize } }))
@@ -160,6 +163,50 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
                 <fieldset style={{ border: `1.5px solid ${theme.palette.divider}`, borderRadius: 10, paddingTop: 20 }}>
                     <legend style={{ textAlign: 'center' }}><Typography variant='subtitle2'>Agregar Nuevo Usuario</Typography></legend>
                     <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                            <FormControl fullWidth sx={{ mb: 6 }}>
+                                <InputLabel id="grade-select">Grado</InputLabel>
+                                <Controller
+                                    name="grade"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select
+                                            {...field}
+                                            labelId="grade-select"
+                                            id="select-grade"
+                                            label="Grado"
+                                            error={Boolean(errors.grade)}
+                                        >
+                                            <MenuItem value='CNL. MSc. CAD.'>
+                                                CNL. MSc. CAD.
+                                            </MenuItem>
+                                            <MenuItem value='TTE.'>
+                                                TTE.
+                                            </MenuItem>
+                                            <MenuItem value='SBTTE.'>
+                                                SBTTE.
+                                            </MenuItem>
+                                            <MenuItem value='SOF. 2DO'>
+                                                SOF. 2DO
+                                            </MenuItem>
+                                            <MenuItem value='SGTO. MY.'>
+                                                SGTO. MY.
+                                            </MenuItem>
+                                            <MenuItem value='SGTO. 1RO.'>
+                                                SGTO. 1RO.
+                                            </MenuItem>
+                                            <MenuItem value='SGTO. 2DO.'>
+                                                SGTO. 2DO.
+                                            </MenuItem>
+                                            <MenuItem value='SGTO.'>
+                                                SGTO.
+                                            </MenuItem>
+                                        </Select>
+                                    )}
+                                />
+                                {errors.grade && <FormHelperText sx={{ color: 'error.main' }}>{errors.grade.message}</FormHelperText>}
+                            </FormControl>
+                        </Grid>
                         <Grid item xs={6}>
                             <FormControl fullWidth sx={{ mb: 6 }}>
                                 <Controller
@@ -242,6 +289,53 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
                                     )}
                                 />
                                 {errors.ci && <FormHelperText sx={{ color: 'error.main' }}>{errors.ci.message}</FormHelperText>}
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={6}>
+                            <FormControl fullWidth sx={{ mb: 6 }}>
+                                <InputLabel id="exp-select">Expedido</InputLabel>
+                                <Controller
+                                    name="exp"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select
+                                            {...field}
+                                            labelId="exp-select"
+                                            id="select-exp"
+                                            label="Expedido"
+                                            error={Boolean(errors.exp)}
+                                        >
+                                            <MenuItem value='PT'>
+                                                PT
+                                            </MenuItem>
+                                            <MenuItem value='LP'>
+                                                LP
+                                            </MenuItem>
+                                            <MenuItem value='CH'>
+                                                CH
+                                            </MenuItem>
+                                            <MenuItem value='CB'>
+                                                CB
+                                            </MenuItem>
+                                            <MenuItem value='OR'>
+                                                OR
+                                            </MenuItem>
+                                            <MenuItem value='SR'>
+                                                SR
+                                            </MenuItem>
+                                            <MenuItem value='BN'>
+                                                BN
+                                            </MenuItem>
+                                            <MenuItem value='TO'>
+                                                TO
+                                            </MenuItem>
+                                            <MenuItem value='PA'>
+                                                PA
+                                            </MenuItem>
+                                        </Select>
+                                    )}
+                                />
+                                {errors.exp && <FormHelperText sx={{ color: 'error.main' }}>{errors.exp.message}</FormHelperText>}
                             </FormControl>
                         </Grid>
                         <Grid item xs={6}>
