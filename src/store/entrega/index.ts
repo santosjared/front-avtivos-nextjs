@@ -1,47 +1,19 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import { instance } from 'src/configs/axios'
+import { UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
-
-interface CategoryType {
-    _id: string
-    name: string
-}
-
-interface StatusType {
-    _id: string
-    name: string
-}
 
 interface LocationType {
     _id: string
     name: string
 }
 
-interface ResponsableType {
-    _id: string
-    grade: string
-    name: string
-    lastName: string
-}
-
-interface ActivosType {
-    _id: string
-    code: string,
-    responsable: ResponsableType | null,
-    name: string,
-    location: LocationType,
-    price_a: number,
-    date_a: string,
-    date_e: string,
-    cantidad: number,
-    image: File | null,
-    imageUrl: string | null,
-    status: StatusType
-    otherStatus: string,
-    category: CategoryType
-    otherCategory: string
-    otherLocation: string
-    description: string
+interface EntregaType {
+    date: string
+    time: string
+    user_en: UserType
+    user_rec: string
+    location: LocationType
 }
 
 interface FetchParams {
@@ -51,7 +23,7 @@ interface FetchParams {
 }
 
 interface ActivosState {
-    data: ActivosType[]
+    data: EntregaType[]
     total: number
     loading: boolean
     error: string | null
@@ -65,23 +37,23 @@ const initialState: ActivosState = {
 }
 
 export const fetchData = createAsyncThunk(
-    'activos/fetchData',
+    'entrega/fetchData',
     async (filtrs?: FetchParams) => {
-        const response = await instance.get('/activos', {
+        const response = await instance.get('/entregas', {
             params: filtrs,
         })
         return response.data
     }
 )
 
-export const addActivos = createAsyncThunk(
-    'activos/addActivos',
+export const addEntrega = createAsyncThunk(
+    'entrega/addentrega',
     async (
         data: { data: FormData; filtrs: FetchParams },
         { dispatch }
     ) => {
         try {
-            const response = await instance.post('/activos', data.data)
+            const response = await instance.post('/entregas', data.data)
 
             Swal.fire({
                 title: '¡Éxito!',
@@ -94,7 +66,7 @@ export const addActivos = createAsyncThunk(
         } catch (e) {
             Swal.fire({
                 title: '¡Error!',
-                text: 'Error al crear activo',
+                text: 'Error al crear Entrega',
                 icon: 'error',
             })
             console.log(e)
@@ -103,14 +75,14 @@ export const addActivos = createAsyncThunk(
     }
 )
 
-export const updateActivos = createAsyncThunk(
-    'activos/updateActivos',
+export const updateEntrega = createAsyncThunk(
+    'entrega/updateEntregas',
     async (
         data: { id: string; data: FormData; filtrs: FetchParams },
         { dispatch }
     ) => {
         try {
-            const response = await instance.put(`/activos/${data.id}`, data.data)
+            const response = await instance.put(`/entrega/${data.id}`, data.data)
 
             Swal.fire({
                 title: '¡Éxito!',
@@ -123,7 +95,7 @@ export const updateActivos = createAsyncThunk(
         } catch (e) {
             Swal.fire({
                 title: '¡Error!',
-                text: 'Error al actualizar activo',
+                text: 'Error al actualizar entrega',
                 icon: 'error',
             })
             console.log(e)
@@ -132,11 +104,11 @@ export const updateActivos = createAsyncThunk(
     }
 )
 
-export const deleteActivos = createAsyncThunk(
-    'activos/deleteActivos',
+export const deleteEntrega = createAsyncThunk(
+    'entrega/deleteEntrega',
     async (data: { id: string; filtrs: FetchParams }, { dispatch }) => {
         try {
-            const response = await instance.delete(`/activos/${data.id}`)
+            const response = await instance.delete(`/entrega/${data.id}`)
 
             Swal.fire({
                 title: '¡Éxito!',
@@ -149,7 +121,7 @@ export const deleteActivos = createAsyncThunk(
         } catch (e) {
             Swal.fire({
                 title: '¡Error!',
-                text: 'Error al eliminar activo',
+                text: 'Error al eliminar entrega',
                 icon: 'error',
             })
             throw e
@@ -157,13 +129,12 @@ export const deleteActivos = createAsyncThunk(
     }
 )
 
-export const activosSlice = createSlice({
-    name: 'activos',
+export const entregaSlice = createSlice({
+    name: 'entrega',
     initialState,
     reducers: {},
     extraReducers: (builder) => {
         builder
-            // Fetch
             .addCase(fetchData.pending, (state) => {
                 state.loading = true
                 state.error = null
@@ -177,41 +148,7 @@ export const activosSlice = createSlice({
                 state.loading = false
                 state.error = action.error.message || 'Error al cargar activos'
             })
-
-            .addCase(addActivos.pending, (state) => {
-                state.loading = true
-            })
-            .addCase(addActivos.fulfilled, (state) => {
-                state.loading = false
-            })
-            .addCase(addActivos.rejected, (state, action) => {
-                state.loading = false
-                state.error = action.error.message || 'Error al crear activo'
-            })
-
-            .addCase(updateActivos.pending, (state) => {
-                state.loading = true
-            })
-            .addCase(updateActivos.fulfilled, (state) => {
-                state.loading = false
-            })
-            .addCase(updateActivos.rejected, (state, action) => {
-                state.loading = false
-                state.error = action.error.message || 'Error al actualizar activo'
-            })
-
-            // Delete
-            .addCase(deleteActivos.pending, (state) => {
-                state.loading = true
-            })
-            .addCase(deleteActivos.fulfilled, (state) => {
-                state.loading = false
-            })
-            .addCase(deleteActivos.rejected, (state, action) => {
-                state.loading = false
-                state.error = action.error.message || 'Error al eliminar activo'
-            })
     },
 })
 
-export default activosSlice.reducer
+export default entregaSlice.reducer

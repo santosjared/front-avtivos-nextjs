@@ -3,13 +3,15 @@ import user from './user';
 import rol from './role';
 import auth from './auth';
 import activos from './activos'
+import entrega from './entrega'
 
 export const store = configureStore({
     reducer: {
         user,
         rol,
         auth,
-        activos
+        activos,
+        entrega
     },
     middleware: getDefaultMiddleware =>
         getDefaultMiddleware({

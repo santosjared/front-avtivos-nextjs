@@ -1,16 +1,12 @@
-import { Box, Button, Card, FormControl, Grid, IconButton, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material"
+import { Box, Button, Card, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material"
 import { DataGrid } from "@mui/x-data-grid"
 import { useEffect, useState } from "react"
-import { useDispatch, useSelector } from "react-redux";
 import Icon from 'src/@core/components/icon';
 import AddDraw from "src/components/draw";
-import { AppDispatch, RootState } from "src/store";
-import AddActivos from "./register";
-import { deleteActivos, fetchData } from "src/store/activos";
 import baseUrl from 'src/configs/environment'
-import Swal from 'sweetalert2'
 import CustomChip from 'src/@core/components/mui/chip'
 import { instance } from "src/configs/axios";
+
 
 interface CategoryType {
     _id: string
@@ -54,43 +50,15 @@ interface ActivosType {
     description: string
 }
 
+interface DataType {
+    data: ActivosType[]
+    total: number
+}
+
 
 interface CellType {
     row: ActivosType
 }
-
-const today = new Date().toISOString().split('T')[0]
-
-const defaultValues: ActivosType = {
-    _id: '',
-    code: '',
-    responsable: null,
-    name: '',
-    location: {
-        _id: '',
-        name: ''
-    },
-    price_a: 0,
-    date_a: today,
-    date_e: today,
-    cantidad: 0,
-    status: {
-        _id: '',
-        name: ''
-    },
-    otherStatus: '',
-    image: null,
-    imageUrl: null,
-    category: {
-        _id: '',
-        name: ''
-    },
-    otherCategory: '',
-    otherLocation: '',
-    description: ''
-}
-
-
 
 const Activos = () => {
 
@@ -98,21 +66,13 @@ const Activos = () => {
     const [pageSize, setPageSize] = useState(10);
     const [page, setPage] = useState(0);
     const [drawOpen, setDrawOpen] = useState<boolean>(false)
-    const [mode, setMode] = useState<'create' | 'edit'>('create')
-    const [activos, setActivos] = useState<ActivosType>(defaultValues)
     const [category, setCategory] = useState<CategoryType[]>([])
     const [status, setStatus] = useState<StatusType[]>([])
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
+    const [data, setData] = useState<DataType>({ data: [], total: 0 });
 
     const toggleDrawer = () => setDrawOpen(!drawOpen)
-
-    const store = useSelector((state: RootState) => state.activos)
-    const dispatch = useDispatch<AppDispatch>()
-
-    useEffect(() => {
-        dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
-    }, [pageSize, page])
 
     useEffect(() => {
         const fectCategory = async () => {
@@ -125,7 +85,7 @@ const Activos = () => {
             }
         }
         fectCategory();
-    }, [mode, open])
+    }, [open])
 
     useEffect(() => {
         const fectStatus = async () => {
@@ -134,65 +94,45 @@ const Activos = () => {
                 const data = response.data
                 setStatus(data)
             } catch (error) {
-                console.error('error al extraer categorias', error)
+                console.error('error al extraer estados', error)
             }
         }
         fectStatus();
-    }, [mode, open])
+    }, [open])
 
-    const handleFilters = (value: string) => {
-        dispatch(fetchData({ field: value, skip: page * pageSize, limit: pageSize }))
-    }
-
-    const handleCreate = () => {
-        setActivos(defaultValues)
-        setMode('create')
-        toggleDrawer()
-    }
-
-    const RowOptions = ({ activo }: { activo: ActivosType }) => {
-
-        const dispatch = useDispatch<AppDispatch>()
-
-        const handleEdit = () => {
-            const date_e = new Date(activo.date_e)
-            const form_e = `${date_e.getFullYear()}-${String(date_e.getMonth() + 1).padStart(2, '0')}-${String(date_e.getDate()).padStart(2, '0')}`
-
-            const date_a = new Date(activo.date_a)
-            const form_a = `${date_a.getFullYear()}-${String(date_a.getMonth() + 1).padStart(2, '0')}-${String(date_a.getDate()).padStart(2, '0')}`
-
-            setActivos({ ...activo, date_a: form_a, date_e: form_e })
-            setMode('edit')
-            toggleDrawer()
-        }
-
-        const handleDelete = async () => {
-
-            const confirme = await Swal.fire({
-                title: '¿Estas seguro de eliminar?',
-                icon: "warning",
-                showCancelButton: true,
-                cancelButtonColor: "#3085d6",
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#ff4040',
-                confirmButtonText: 'Eliminar',
-            }).then(async (result) => { return result.isConfirmed });
-            if (confirme) {
-                dispatch(deleteActivos({ id: activo._id, filtrs: { field: '', skip: page * pageSize, limit: pageSize } }))
+    useEffect(() => {
+        const fetchActivosAbailable = async () => {
+            const filters = { skip: page * pageSize, limit: pageSize }
+            try {
+                const response = await instance.get('/activos/activos-available',
+                    {
+                        params: filters,
+                    }
+                )
+                console.log(data)
+                setData({ data: response.data?.result || [], total: response.data?.total || 0 })
+            } catch (error) {
+                console.error('error al extraer activos validos', error)
             }
         }
+        fetchActivosAbailable();
+    }, [open, page, pageSize])
 
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <IconButton size='small' onClick={handleEdit}>
-                    <Icon icon='mdi:pencil-outline' fontSize={20} color='#00a0f4' />
-                </IconButton>
-                <IconButton size='small' onClick={handleDelete}>
-                    <Icon icon='ic:outline-delete' fontSize={20} color='#ff4040' />
-                </IconButton>
-            </Box>
-        )
+    const handleFilters = async (value: string) => {
+
+        const filters = { field: value, skip: page * pageSize, limit: pageSize }
+        try {
+            const response = await instance.get('/activos/activos-available',
+                {
+                    params: filters,
+                }
+            )
+            setData(response.data)
+        } catch (error) {
+            console.error('error al extraer activos validos', error)
+        }
     }
+
     const columns = [
         {
             flex: 0.2,
@@ -324,16 +264,6 @@ const Activos = () => {
                 />
             )
         },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'actions',
-            sortable: false,
-            headerName: 'Acciones',
-            renderCell: ({ row }: CellType) => {
-                return (<RowOptions activo={row} />)
-            }
-        }
     ]
 
     return (
@@ -431,24 +361,23 @@ const Activos = () => {
                                 </Button>
                             </Box>
                             <Button
-                                onClick={handleCreate}
+                                onClick={toggleDrawer}
                                 variant="contained"
-                                startIcon={<Icon icon='mdi:add' />}
                                 sx={{ p: 3.5 }}
-                                color="success"
+                                color="info"
                             >
-                                Nuevo Activo
+                                Realizar entrega
                             </Button>
                         </Box>
                     </Box>
                     <Box sx={{ display: 'flex', p: 5, justifyContent: 'space-between' }}>
                         <Typography variant='subtitle2'>
-                            Lista de activos fijos
+                            Lista de activos fijos disponibles
                         </Typography>
                     </Box>
                     <DataGrid
                         autoHeight
-                        rows={store.data}
+                        rows={data?.data || []}
                         columns={columns}
                         getRowId={(row: any) => row._id}
                         pagination
@@ -456,7 +385,7 @@ const Activos = () => {
                         disableSelectionOnClick
                         onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
                         rowsPerPageOptions={[10, 25, 50]}
-                        rowCount={store.total}
+                        rowCount={data?.total || 0}
                         paginationMode="server"
                         onPageChange={(newPage) => setPage(newPage)}
                         sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
@@ -470,14 +399,14 @@ const Activos = () => {
 
                 </Card>
             </Grid>
-            <AddDraw open={drawOpen} toggle={toggleDrawer} title={mode === 'create' ? 'Registro del rol' : 'Editar rol'}>
-                <AddActivos
+            <AddDraw open={drawOpen} toggle={toggleDrawer} title={'Registro del entrega'}>
+                {/* <AddActivos
                     toggle={toggleDrawer}
                     page={page}
                     pageSize={pageSize}
                     defaultValues={activos}
                     mode={mode}
-                />
+                /> */}
             </AddDraw>
         </Grid>
     )

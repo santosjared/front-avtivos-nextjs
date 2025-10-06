@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography, useTheme } from "@mui/material"
+import { Autocomplete, Box, Button, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography, useTheme } from "@mui/material"
 import { useEffect, useState } from "react"
 import Icon from 'src/@core/components/icon'
 import * as yup from 'yup'
@@ -10,7 +10,6 @@ import { addActivos, updateActivos } from "src/store/activos";
 import { instance } from "src/configs/axios";
 import baseUrl from 'src/configs/environment'
 
-
 interface CategoryType {
     _id: string
     name: string
@@ -21,11 +20,24 @@ interface StatusType {
     name: string
 }
 
+interface LocationType {
+    _id: string
+    name: string
+}
+
+interface ResponsableType {
+    _id: string
+    grade: string
+    name: string
+    lastName: string
+}
+
 interface ActivosType {
-    _id?: string
+    _id: string
     code: string,
+    responsable: ResponsableType | null,
     name: string,
-    location: string,
+    location: LocationType,
     price_a: number,
     date_a: string,
     date_e: string,
@@ -36,6 +48,7 @@ interface ActivosType {
     otherStatus: string,
     category: CategoryType
     otherCategory: string
+    otherLocation: string
     description: string
 }
 
@@ -61,9 +74,11 @@ const schema = yup.object().shape({
         .min(2, 'El campo nombre debe tener al menos 3 caracteres'),
 
     location: yup
-        .string()
-        .required('El campo ubicación es requerido')
-        .min(2, 'El campo ubicación debe tener al menos 2 caracteres'),
+        .object({
+            _id: yup.string().required('El campo ubicacion es requerido'),
+            name: yup.string().required('El campo ubicacion es requerido')
+        })
+        .required('El campo ubicacion es requerido'),
 
     price_a: yup
         .number()
@@ -81,12 +96,6 @@ const schema = yup.object().shape({
         .typeError('La fecha de expiración no es válida')
         .required('El campo fecha de expiración es requerido'),
 
-    cantidad: yup
-        .number()
-        .typeError('El campo cantidad debe ser un número')
-        .required('El campo cantidad es requerido')
-        .positive('La cantidad debe ser un número positivo'),
-
     image: yup
         .mixed<File>()
         .test('fileSize', 'El archivo es muy grande (máximo 2MB)', value => {
@@ -101,8 +110,8 @@ const schema = yup.object().shape({
 
     category: yup
         .object({
-            _id: yup.string().required(),
-            name: yup.string().required()
+            _id: yup.string().required('El campo categoría es requerido'),
+            name: yup.string().required('El campo categoría es requerido')
         })
         .required('El campo categoría es requerido'),
 
@@ -117,10 +126,18 @@ const schema = yup.object().shape({
             otherwise: schema => schema.notRequired()
         }),
 
+    responsable: yup
+        .object({
+            _id: yup.string().required('El campo responsable es requerido'),
+            name: yup.string().notRequired(),
+            grade: yup.string().notRequired(),
+            lastName: yup.string().notRequired(),
+        })
+        .required('El campo responsable es requerido'),
     status: yup
         .object({
-            _id: yup.string().required(),
-            name: yup.string().required()
+            _id: yup.string().required('El campo estado es requerido'),
+            name: yup.string().required('El campo estado es requerido')
         })
         .required('El campo estado es requerido'),
 
@@ -131,6 +148,16 @@ const schema = yup.object().shape({
             then: schema =>
                 schema
                     .required('El campo otro estado es requerido')
+                    .min(3, 'Debe tener al menos 3 caracteres'),
+            otherwise: schema => schema.notRequired()
+        }),
+    otherLocation: yup
+        .string()
+        .when('location', {
+            is: (val: unknown) => (val as CategoryType)?.name === 'otro',
+            then: schema =>
+                schema
+                    .required('El campo otra ubicacion es requerido')
                     .min(3, 'Debe tener al menos 3 caracteres'),
             otherwise: schema => schema.notRequired()
         }),
@@ -149,6 +176,8 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
     const [imagePrev, setImagePre] = useState<string | null>(defaultValues?.imageUrl || null)
     const [category, setCategory] = useState<CategoryType[]>([])
     const [status, setStatus] = useState<StatusType[]>([])
+    const [location, setLocation] = useState<LocationType[]>([])
+    const [responsable, setResponsable] = useState<ResponsableType[]>([])
 
     const dispatch = useDispatch<AppDispatch>()
     const theme = useTheme()
@@ -179,6 +208,32 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
         fectStatus();
     }, [mode, toggle])
 
+    useEffect(() => {
+        const fectLocation = async () => {
+            try {
+                const response = await instance.get('/activos/location')
+                const data = response.data
+                setLocation([...data, { name: 'otro', _id: 'otro' }])
+            } catch (error) {
+                console.error('error al extraer categorias', error)
+            }
+        }
+        fectLocation();
+    }, [mode, toggle])
+
+    useEffect(() => {
+        const fectUsers = async () => {
+            try {
+                const response = await instance.get('/users/all-users')
+                const data = response.data
+                setResponsable(data)
+            } catch (error) {
+                console.error('error al extraer categorias', error)
+            }
+        }
+        fectUsers();
+    }, [mode, toggle])
+
     const {
         reset,
         control,
@@ -193,11 +248,14 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
 
     const otherCategory = watch('category')
     const otherStatus = watch('status')
+    const otherLocation = watch('location')
 
     useEffect(() => {
         reset(defaultValues)
         if (defaultValues?.imageUrl) {
             setImagePre(`${baseUrl().backendURI}/images/${defaultValues?.imageUrl}`)
+        } else {
+            setImagePre(defaultValues?.imageUrl || null)
         }
     }, [defaultValues, mode, toggle])
 
@@ -207,16 +265,27 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
 
         formData.append('code', data.code)
         formData.append('name', data.name)
-        formData.append('location', data.location)
+        formData.append('location', data.location._id)
         formData.append('price_a', data.price_a.toString())
-        formData.append('cantidad', data.cantidad.toString())
         formData.append('date_a', new Date(data.date_a).toISOString())
         formData.append('date_e', new Date(data.date_e).toISOString())
-        formData.append('category', data.category?.name || '')
-        formData.append('otherCategory', data.otherCategory)
-        formData.append('status', data.status?.name || '')
-        formData.append('otherStatus', data.otherStatus)
+        formData.append('category', data.category._id)
+        formData.append('status', data.status._id)
+        formData.append('responsable', data.responsable?._id || '')
 
+        if (data.description) {
+            formData.append('description', data.description)
+        }
+
+        if (data.otherCategory) {
+            formData.append('otherCategory', data.otherCategory)
+        }
+        if (data.otherStatus) {
+            formData.append('otherStatus', data.otherStatus)
+        }
+        if (data.otherLocation) {
+            formData.append('otherLocation', data.otherLocation)
+        }
         if (data.image instanceof File) {
             formData.append('image', data.image)
         }
@@ -341,23 +410,52 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                     </Grid>
                     <Grid item xs={6}>
                         <FormControl fullWidth sx={{ mb: 6 }}>
+                            <InputLabel id="location-select">Ubicacion</InputLabel>
                             <Controller
                                 name="location"
                                 control={control}
-                                rules={{ required: true }}
-                                render={({ field: { value, onChange } }) => (
-                                    <TextField
-                                        label='Ubicacion'
-                                        placeholder='Bomberos'
-                                        onChange={onChange}
+                                render={({ field: { onChange, value } }) => (
+                                    <Select
+                                        labelId="location-select"
+                                        id="select-location"
+                                        label="Ubicacion"
+                                        value={value?._id ?? ''}
                                         error={Boolean(errors.location)}
-                                        value={value}
-                                    />
+                                        onChange={(e) => {
+                                            const selectedId = e.target.value as string
+                                            const selectedLocation = location.find((loc) => loc._id === selectedId) || null
+                                            onChange(selectedLocation)
+                                        }}
+                                    >
+                                        {location.map((loc, index) => (
+                                            <MenuItem value={loc._id || ''} key={index}>{loc.name}</MenuItem>
+                                        ))}
+                                    </Select>
                                 )}
                             />
-                            {errors.location && <FormHelperText sx={{ color: 'error.main' }}>{errors.location.message}</FormHelperText>}
+                            {errors.location && <FormHelperText sx={{ color: 'error.main' }}>{errors.location?.message || errors.location.name?.message || errors.location._id?.message}</FormHelperText>}
                         </FormControl>
                     </Grid>
+                    {otherLocation?.name == 'otro' &&
+                        <Grid item xs={6}>
+                            <FormControl fullWidth sx={{ mb: 3 }}>
+                                <Controller
+                                    name="otherLocation"
+                                    control={control}
+                                    rules={{ required: true }}
+                                    render={({ field: { value, onChange } }) => (
+                                        <TextField
+                                            label='Especifica otra ubicacion'
+                                            onChange={onChange}
+                                            error={Boolean(errors.otherLocation)}
+                                            value={value}
+                                        />
+                                    )}
+                                />
+                                {errors.otherLocation && <FormHelperText sx={{ color: 'error.main' }}>{errors.otherLocation.message}</FormHelperText>}
+                            </FormControl>
+                        </Grid>
+                    }
                     <Grid item xs={6}>
                         <FormControl fullWidth sx={{ mb: 6 }}>
                             <Controller
@@ -375,25 +473,6 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                 )}
                             />
                             {errors.price_a && <FormHelperText sx={{ color: 'error.main' }}>{errors.price_a.message}</FormHelperText>}
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={6}>
-                        <FormControl fullWidth sx={{ mb: 6 }} >
-                            <Controller
-                                name="cantidad"
-                                control={control}
-                                rules={{ required: true }}
-                                render={({ field: { value, onChange } }) => (
-                                    <TextField
-                                        label='Cantidad'
-                                        type="number"
-                                        onChange={onChange}
-                                        value={value}
-                                        error={Boolean(errors.cantidad)}
-                                    />
-                                )}
-                            />
-                            {errors.cantidad && <FormHelperText sx={{ color: 'error.main' }}>{errors.cantidad.message}</FormHelperText>}
                         </FormControl>
                     </Grid>
                     <Grid item xs={6}>
@@ -459,7 +538,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                     </Select>
                                 )}
                             />
-                            {errors.category && <FormHelperText sx={{ color: 'error.main' }}>{errors.category.message}</FormHelperText>}
+                            {errors.category && <FormHelperText sx={{ color: 'error.main' }}>{errors.category?.message || errors.category.name?.message || errors.category._id?.message}</FormHelperText>}
                         </FormControl>
                     </Grid>
                     {otherCategory?.name == 'otro' &&
@@ -507,11 +586,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                     </Select>
                                 )}
                             />
-                            {errors.status && (
-                                <FormHelperText sx={{ color: 'error.main' }}>
-                                    {errors.status.message}
-                                </FormHelperText>
-                            )}
+                            {errors.status && <FormHelperText sx={{ color: 'error.main' }}>{errors.status?.message || errors.status.name?.message || errors.status._id?.message}</FormHelperText>}
                         </FormControl>
                     </Grid>
 
@@ -535,6 +610,38 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                             </FormControl>
                         </Grid>
                     }
+                    <Grid item xs={6}>
+                        <FormControl fullWidth sx={{ mb: 6 }}>
+                            <Controller
+                                name="responsable"
+                                control={control}
+                                render={({ field: { onChange, value } }) => (
+                                    <Autocomplete
+                                        options={responsable}
+                                        getOptionLabel={(option) =>
+                                            option ? `${option.grade || ''} ${option.name || ''} ${option.lastName || ''}` : ''
+                                        }
+                                        value={value || null}
+                                        isOptionEqualToValue={(option, value) => option._id === value._id}
+                                        onChange={(_, newValue) => onChange(newValue)}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Responsable"
+                                                error={Boolean(errors.responsable)}
+                                                helperText={
+                                                    errors.responsable?.message ||
+                                                    errors.responsable?.name?.message ||
+                                                    errors.responsable?._id?.message
+                                                }
+                                            />
+                                        )}
+                                    />
+                                )}
+                            />
+                        </FormControl>
+                    </Grid>
+
                     <Grid item xs={12}>
                         <FormControl fullWidth sx={{ mb: 6 }}>
                             <Controller
