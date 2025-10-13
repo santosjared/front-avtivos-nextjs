@@ -6,6 +6,7 @@ import AddDraw from "src/components/draw";
 import baseUrl from 'src/configs/environment'
 import CustomChip from 'src/@core/components/mui/chip'
 import { instance } from "src/configs/axios";
+import AddEntrega from "./register";
 
 
 interface CategoryType {
@@ -60,6 +61,139 @@ interface CellType {
     row: ActivosType
 }
 
+const columns = [
+    {
+        flex: 0.2,
+        minWidth: 150,
+        field: 'code',
+        sortable: false,
+        headerName: 'Codigo',
+        renderCell: ({ row }: CellType) => {
+            return (
+                <Typography variant='body2' noWrap>{row.code}</Typography>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 120,
+        field: 'name',
+        sortable: false,
+        headerName: 'Nombre',
+        renderCell: ({ row }: CellType) => {
+            return (
+                <Typography variant='body2' noWrap>{row.name}</Typography>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 120,
+        field: 'location',
+        headerName: 'Ubicacion',
+        renderCell: ({ row }: CellType) => {
+            return (
+                <Typography variant='body2' noWrap>{row.location?.name}</Typography>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 50,
+        field: 'price_a',
+        headerName: 'Precio de Adquicion',
+        renderCell: ({ row }: CellType) => {
+            return (
+                <Typography variant='body2' noWrap>{row.price_a}</Typography>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 90,
+        field: 'date_a',
+        headerName: 'Fecha de Adquicion',
+        renderCell: ({ row }: CellType) => {
+            const date = new Date(row.date_e)
+            const form = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+            return (
+                <Typography variant='body2' noWrap>{form}</Typography>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 90,
+        field: 'date_e',
+        headerName: 'Fecha de expiracion',
+        renderCell: ({ row }: CellType) => {
+            const date = new Date(row.date_e)
+            const form = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+            return (
+                <Typography variant='body2' noWrap>{form}</Typography>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 90,
+        field: 'photo',
+        headerName: 'Foto',
+        renderCell: ({ row }: CellType) => {
+            return (
+                <Box sx={{ width: 40, height: 40, borderRadius: '3px' }}>
+                    <img
+                        src={`${baseUrl().backendURI}/images/${row.imageUrl}`}
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: '3px'
+                        }}
+                        alt="im"
+                    />
+                </Box>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 90,
+        field: 'category',
+        headerName: 'Categoria',
+        renderCell: ({ row }: CellType) => {
+            return (
+                <Typography variant='body2' noWrap>{row.category?.name}</Typography>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 190,
+        field: 'responsable',
+        headerName: 'Responsable',
+        renderCell: ({ row }: CellType) => {
+            return (
+                <Typography variant='body2' noWrap>{row.responsable?.grade} {row.responsable?.name} {row.responsable?.lastName}</Typography>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 90,
+        field: 'status',
+        headerName: 'Estado',
+        renderCell: ({ row }: CellType) => (
+            <CustomChip
+                skin='light'
+                size='small'
+                label={row.status?.name}
+                color={row.status?.name === 'Bueno' ? 'success' : row.status?.name === 'Regular' ? 'warning' : row.status?.name === 'Malo' ? 'error' : 'info'}
+                sx={{ textTransform: 'capitalize' }}
+            />
+        )
+    },
+]
+
 const Activos = () => {
 
     const [field, setField] = useState('');
@@ -71,6 +205,7 @@ const Activos = () => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
     const [data, setData] = useState<DataType>({ data: [], total: 0 });
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const toggleDrawer = () => setDrawOpen(!drawOpen)
 
@@ -109,7 +244,6 @@ const Activos = () => {
                         params: filters,
                     }
                 )
-                console.log(data)
                 setData({ data: response.data?.result || [], total: response.data?.total || 0 })
             } catch (error) {
                 console.error('error al extraer activos validos', error)
@@ -127,144 +261,11 @@ const Activos = () => {
                     params: filters,
                 }
             )
-            setData(response.data)
+            setData({ data: response.data?.result || [], total: response.data?.total || 0 })
         } catch (error) {
             console.error('error al extraer activos validos', error)
         }
     }
-
-    const columns = [
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'code',
-            sortable: false,
-            headerName: 'Codigo',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.code}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 120,
-            field: 'name',
-            sortable: false,
-            headerName: 'Nombre',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.name}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 120,
-            field: 'location',
-            headerName: 'Ubicacion',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.location?.name}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 50,
-            field: 'price_a',
-            headerName: 'Precio de Adquicion',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.price_a}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'date_a',
-            headerName: 'Fecha de Adquicion',
-            renderCell: ({ row }: CellType) => {
-                const date = new Date(row.date_e)
-                const form = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-                return (
-                    <Typography variant='body2' noWrap>{form}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'date_e',
-            headerName: 'Fecha de expiracion',
-            renderCell: ({ row }: CellType) => {
-                const date = new Date(row.date_e)
-                const form = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-                return (
-                    <Typography variant='body2' noWrap>{form}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'photo',
-            headerName: 'Foto',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Box sx={{ width: 40, height: 40, borderRadius: '3px' }}>
-                        <img
-                            src={`${baseUrl().backendURI}/images/${row.imageUrl}`}
-                            style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: '3px'
-                            }}
-                            alt="im"
-                        />
-                    </Box>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'category',
-            headerName: 'Categoria',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.category?.name}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 190,
-            field: 'responsable',
-            headerName: 'Responsable',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.responsable?.grade} {row.responsable?.name} {row.responsable?.lastName}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'status',
-            headerName: 'Estado',
-            renderCell: ({ row }: CellType) => (
-                <CustomChip
-                    skin='light'
-                    size='small'
-                    label={row.status?.name}
-                    color={row.status?.name === 'Bueno' ? 'success' : row.status?.name === 'Regular' ? 'warning' : row.status?.name === 'Malo' ? 'error' : 'info'}
-                    sx={{ textTransform: 'capitalize' }}
-                />
-            )
-        },
-    ]
 
     return (
         <Grid container spacing={6}>
@@ -364,6 +365,7 @@ const Activos = () => {
                                 onClick={toggleDrawer}
                                 variant="contained"
                                 sx={{ p: 3.5 }}
+                                disabled={selectedIds.length <= 0}
                                 color="info"
                             >
                                 Realizar entrega
@@ -382,31 +384,28 @@ const Activos = () => {
                         getRowId={(row: any) => row._id}
                         pagination
                         pageSize={pageSize}
-                        disableSelectionOnClick
+                        checkboxSelection
                         onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
                         rowsPerPageOptions={[10, 25, 50]}
                         rowCount={data?.total || 0}
                         paginationMode="server"
                         onPageChange={(newPage) => setPage(newPage)}
+                        onSelectionModelChange={(newSelection: any) => {
+                            setSelectedIds(newSelection);
+                        }}
                         sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
                         localeText={{
                             MuiTablePagination: {
                                 labelRowsPerPage: 'Filas por página:',
                             },
-                        }
-                        }
+                        }}
                     />
+
 
                 </Card>
             </Grid>
             <AddDraw open={drawOpen} toggle={toggleDrawer} title={'Registro del entrega'}>
-                {/* <AddActivos
-                    toggle={toggleDrawer}
-                    page={page}
-                    pageSize={pageSize}
-                    defaultValues={activos}
-                    mode={mode}
-                /> */}
+                <AddEntrega toggle={toggleDrawer} selectIds={selectedIds} />
             </AddDraw>
         </Grid>
     )
