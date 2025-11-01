@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Button, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography, useTheme } from "@mui/material"
+import { Autocomplete, Box, Button, FormControl, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Select, TextField, Typography, useTheme } from "@mui/material"
 import { useEffect, useState } from "react"
 import Icon from 'src/@core/components/icon'
 import * as yup from 'yup'
@@ -10,9 +10,18 @@ import { addActivos, updateActivos } from "src/store/activos";
 import { instance } from "src/configs/axios";
 import baseUrl from 'src/configs/environment'
 
-interface CategoryType {
-    _id: string
+interface SubCategoryType {
+    _id?: string
     name: string
+    util: number
+}
+
+interface ContableType {
+    _id: string
+    name: string,
+    util: number,
+    subcategory: SubCategoryType[]
+    description?: string
 }
 
 interface StatusType {
@@ -25,29 +34,32 @@ interface LocationType {
     name: string
 }
 
+interface GradeType {
+    name: string
+    _id: string
+}
+
 interface ResponsableType {
     _id: string
-    grade: string
+    grade: GradeType
     name: string
     lastName: string
 }
 
 interface ActivosType {
-    _id: string
+    _id?: string
     code: string,
     responsable: ResponsableType | null,
     name: string,
-    location: LocationType,
+    location: LocationType | null,
     price_a: number,
     date_a: string,
-    date_e: string,
-    cantidad: number,
     image: File | null,
     imageUrl: string | null,
-    status: StatusType
+    status: StatusType | null
     otherStatus: string,
-    category: CategoryType
-    otherCategory: string
+    category: ContableType | null
+    subcategory: SubCategoryType | null
     otherLocation: string
     description: string
 }
@@ -71,15 +83,27 @@ const schema = yup.object().shape({
     name: yup
         .string()
         .required('El campo nombre es requerido')
-        .min(2, 'El campo nombre debe tener al menos 3 caracteres'),
+        .min(2, 'El campo nombre debe tener al menos 2 caracteres')
+        .max(50, 'El campo nombre no debe exceder mas de 50 caracteres'),
 
     location: yup
         .object({
-            _id: yup.string().required('El campo ubicacion es requerido'),
-            name: yup.string().required('El campo ubicacion es requerido')
+            _id: yup.string().required('Seleccione el lugar donde se encuentra el activo'),
+            name: yup.string().required('Seleccione el lugar donde se encuentra el activo')
         })
-        .required('El campo ubicacion es requerido'),
-
+        .required('Seleccione el lugar donde se encuentra el activo')
+        .nullable(),
+    otherLocation: yup
+        .string()
+        .when('location', {
+            is: (val: unknown) => (val as LocationType)?.name === 'otro',
+            then: schema =>
+                schema
+                    .required('Debe espefificar el lugar donde se encuentra el activo')
+                    .min(3, 'El lugar donde se encuentra al menos debe tener 3 caracteres')
+                    .max(50, 'El lugar donde se encuentra el activo no debe exceder mas de 50 caracteres'),
+            otherwise: schema => schema.notRequired()
+        }),
     price_a: yup
         .number()
         .typeError('El campo precio debe ser un número')
@@ -90,19 +114,13 @@ const schema = yup.object().shape({
         .date()
         .typeError('La fecha de adquisición no es válida')
         .required('El campo fecha de adquisición es requerido'),
-
-    date_e: yup
-        .date()
-        .typeError('La fecha de expiración no es válida')
-        .required('El campo fecha de expiración es requerido'),
-
     image: yup
         .mixed<File>()
-        .test('fileSize', 'El archivo es muy grande (máximo 2MB)', value => {
+        .test('fileSize', 'El archivo es muy grande (máximo 12MB)', value => {
             if (!value) return true
-            return (value as File).size <= 2 * 1024 * 1024
+            return (value as File).size <= 12 * 1024 * 1024
         })
-        .test('fileType', 'Formato no soportado (solo JPG/PNG)', value => {
+        .test('fileType', 'Formato no soportado (solo JPG/PNG o JPEG)', value => {
             if (!value) return true
             return ['image/jpeg', 'image/png', 'image/jpg'].includes((value as File).type)
         })
@@ -110,36 +128,21 @@ const schema = yup.object().shape({
 
     category: yup
         .object({
-            _id: yup.string().required('El campo categoría es requerido'),
-            name: yup.string().required('El campo categoría es requerido')
+            _id: yup.string().required('Seleccione una categoría del activo'),
+            name: yup.string().required('Seleccione una categoría del activo')
         })
-        .required('El campo categoría es requerido'),
+        .required('Seleccione una categoría del activo'),
+    subcategory: yup
+        .object()
+        .notRequired()
+        .nullable(),
 
-    otherCategory: yup
-        .string()
-        .when('category', {
-            is: (val: unknown) => (val as CategoryType)?.name === 'otro',
-            then: schema =>
-                schema
-                    .required('El campo otra categoría es requerido')
-                    .min(3, 'Debe tener al menos 3 caracteres'),
-            otherwise: schema => schema.notRequired()
-        }),
-
-    responsable: yup
-        .object({
-            _id: yup.string().required('El campo responsable es requerido'),
-            name: yup.string().notRequired(),
-            grade: yup.string().notRequired(),
-            lastName: yup.string().notRequired(),
-        })
-        .required('El campo responsable es requerido'),
     status: yup
         .object({
-            _id: yup.string().required('El campo estado es requerido'),
-            name: yup.string().required('El campo estado es requerido')
+            _id: yup.string().required('Seleccione un estado del activo'),
+            name: yup.string().required('Seleccione un estado del activo')
         })
-        .required('El campo estado es requerido'),
+        .required('Seleccione un estado del activo'),
 
     otherStatus: yup
         .string()
@@ -147,25 +150,25 @@ const schema = yup.object().shape({
             is: (val: unknown) => (val as StatusType)?.name === 'otro',
             then: schema =>
                 schema
-                    .required('El campo otro estado es requerido')
-                    .min(3, 'Debe tener al menos 3 caracteres'),
+                    .required('Debe espificicar el otro estado del activo')
+                    .min(3, 'El estado del activo debe ser al menos de 3 caracteres')
+                    .max(50, 'El estado del activo no debe exceder mas de 50 caracteres'),
             otherwise: schema => schema.notRequired()
         }),
-    otherLocation: yup
-        .string()
-        .when('location', {
-            is: (val: unknown) => (val as CategoryType)?.name === 'otro',
-            then: schema =>
-                schema
-                    .required('El campo otra ubicacion es requerido')
-                    .min(3, 'Debe tener al menos 3 caracteres'),
-            otherwise: schema => schema.notRequired()
-        }),
-
+    responsable: yup
+        .object({
+            _id: yup.string().required('Seleccione un responsable para el activo'),
+            name: yup.string().notRequired(),
+            grade: yup.object().notRequired(),
+            lastName: yup.string().notRequired(),
+        })
+        .required('Seleccione un responsable para el activo')
+        .nullable(),
     description: yup
         .string()
         .transform(value => (value?.trim() === '' ? undefined : value))
-        .min(10, 'El campo descripción debe tener al menos 10 caracteres')
+        .min(10, 'La descripción debe tener al menos 10 caracteres')
+        .max(1000, 'La descripción no debe superar los 1000 caracteres')
         .notRequired()
 })
 
@@ -174,7 +177,7 @@ const schema = yup.object().shape({
 const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Props) => {
 
     const [imagePrev, setImagePre] = useState<string | null>(defaultValues?.imageUrl || null)
-    const [category, setCategory] = useState<CategoryType[]>([])
+    const [category, setCategory] = useState<ContableType[]>([])
     const [status, setStatus] = useState<StatusType[]>([])
     const [location, setLocation] = useState<LocationType[]>([])
     const [responsable, setResponsable] = useState<ResponsableType[]>([])
@@ -185,22 +188,22 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
     useEffect(() => {
         const fectCategory = async () => {
             try {
-                const response = await instance.get('/activos/category')
+                const response = await instance.get('/contables')
                 const data = response.data
-                setCategory([...data, { name: 'otro', _id: 'otro' }])
+                setCategory(data || [])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
         }
         fectCategory();
-    }, [mode, toggle])
+    }, [])
 
     useEffect(() => {
         const fectStatus = async () => {
             try {
                 const response = await instance.get('/activos/status')
                 const data = response.data
-                setStatus([...data, { name: 'otro', _id: 'otro' }])
+                setStatus([...data, { name: 'Otro', _id: 'otro' }])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
@@ -213,7 +216,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
             try {
                 const response = await instance.get('/activos/location')
                 const data = response.data
-                setLocation([...data, { name: 'otro', _id: 'otro' }])
+                setLocation([...data, { name: 'OTRO', _id: 'Other' }])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
@@ -228,17 +231,19 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                 const data = response.data
                 setResponsable(data)
             } catch (error) {
-                console.error('error al extraer categorias', error)
+                console.error('error al extraer los usuarios', error)
             }
         }
         fectUsers();
-    }, [mode, toggle])
+    }, [])
 
     const {
         reset,
         control,
         handleSubmit,
         watch,
+        setValue,
+        clearErrors,
         formState: { errors }
     } = useForm<ActivosType>({
         defaultValues,
@@ -246,7 +251,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
         resolver: yupResolver(schema)
     });
 
-    const otherCategory = watch('category')
+    const selectCategory = watch('category')
     const otherStatus = watch('status')
     const otherLocation = watch('location')
 
@@ -259,26 +264,30 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
         }
     }, [defaultValues, mode, toggle])
 
+    useEffect(() => {
+        return () => {
+            if (imagePrev) URL.revokeObjectURL(imagePrev);
+        };
+    }, [imagePrev]);
+
     const onSubmit = (data: ActivosType) => {
 
         const formData = new FormData()
 
         formData.append('code', data.code)
         formData.append('name', data.name)
-        formData.append('location', data.location._id)
+        formData.append('location', data.location?._id || '')
         formData.append('price_a', data.price_a.toString())
         formData.append('date_a', new Date(data.date_a).toISOString())
-        formData.append('date_e', new Date(data.date_e).toISOString())
-        formData.append('category', data.category._id)
-        formData.append('status', data.status._id)
+        formData.append('category', data.category?._id || '')
+        formData.append('status', data.status?._id || '')
         formData.append('responsable', data.responsable?._id || '')
 
         if (data.description) {
             formData.append('description', data.description)
         }
-
-        if (data.otherCategory) {
-            formData.append('otherCategory', data.otherCategory)
+        if (data.subcategory) {
+            formData.append('subcategory', data.subcategory?._id || '')
         }
         if (data.otherStatus) {
             formData.append('otherStatus', data.otherStatus)
@@ -306,52 +315,98 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
         setImagePre(null)
     }
 
+    const handleRemoveImage = () => {
+        setImagePre(null);
+        setValue('image', null);
+        clearErrors('image');
+    };
+
+
     return (<Box>
         <form autoComplete="off" onSubmit={handleSubmit(onSubmit)}>
             <fieldset style={{ border: `1.5px solid ${theme.palette.divider}`, borderRadius: 10, paddingTop: 20 }}>
-                <legend style={{ textAlign: 'center' }}><Typography variant='subtitle2'>{mode == 'create' ? 'Agregar Nuevo Activo' : 'Editar Activo'}</Typography></legend>
+                <legend style={{ textAlign: 'center' }}><Typography variant='subtitle2'>{mode == 'create' ? 'Agregar Nuevo Activo Fijo' : 'Editar Activo Fijo'}</Typography></legend>
                 <Grid container spacing={2}>
                     <Grid item xs={12}>
-                        <label htmlFor="upload-image" style={{ cursor: 'pointer' }}>
-                            {imagePrev ?
-                                <Box sx={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    mt: 2,
-                                    mb: 4,
-                                    borderRadius: '10px'
-                                }}>
+                        {imagePrev ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                <Box
+                                    sx={{
+                                        position: 'relative',
+                                        display: 'inline-block',
+                                        mt: 2,
+                                        mb: 4,
+                                        borderRadius: errors.image ? 0 : 2,
+                                        overflow: 'hidden',
+                                    }}
+                                >
                                     <img
                                         src={imagePrev}
                                         alt="Vista previa"
-                                        style={{ maxWidth: '100%', height: '200px', borderRadius: 10 }}
+                                        style={{
+                                            width: '100%',
+                                            height: errors.image ? '50px' : '220px',
+                                            borderRadius: 8,
+                                            display: 'block',
+                                        }}
                                     />
-                                    {errors.image && <FormHelperText sx={{ color: 'error.main' }}>{errors.image.message}</FormHelperText>}
+                                    <IconButton
+                                        onClick={handleRemoveImage}
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 8,
+                                            right: 8,
+                                            backgroundColor: theme.palette.error.main,
+                                            color: theme.palette.error.contrastText,
+                                            boxShadow: 2,
+                                            '&:hover': {
+                                                backgroundColor: theme.palette.error.light,
+                                            },
+                                        }}
+                                        size="small"
+                                    >
+                                        <Icon icon="mdi:close" />
+                                    </IconButton>
+
+                                    {errors.image && (
+                                        <FormHelperText sx={{ color: 'error.main', textAlign: 'center', mt: 1 }}>
+                                            {errors.image.message}
+                                        </FormHelperText>
+                                    )}
                                 </Box>
-                                :
+                            </Box>
+                        ) : (
+                            <label htmlFor="upload-image" style={{ cursor: 'pointer', width: '100%' }}>
                                 <Box
                                     sx={{
                                         display: 'flex',
                                         flexDirection: 'column',
                                         alignItems: 'center',
-                                        border: theme => `1px dashed ${errors.image ? theme.palette.error.main : theme.palette.secondary.main}`,
-                                        borderRadius: 1,
                                         justifyContent: 'center',
-                                        padding: 2,
-                                        mb: 6
+                                        border: theme =>
+                                            `1px dashed ${errors.image ? theme.palette.error.main : theme.palette.secondary.main
+                                            }`,
+                                        borderRadius: 2,
+                                        padding: 3,
+                                        mb: 4,
+                                        textAlign: 'center',
+                                        width: '100%',
                                     }}
                                 >
-                                    <Icon icon='mdi:cloud' />
-                                    <Typography variant="subtitle2">Seleccionar imagen</Typography>
-                                    {errors.image && <FormHelperText sx={{ color: 'error.main' }}>{errors.image.message}</FormHelperText>}
-                                </Box>}
-                        </label>
+                                    <Icon icon="mdi:cloud-upload" />
+                                    <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                                        Seleccionar imagen del activo fijo
+                                    </Typography>
+                                    {errors.image && (
+                                        <FormHelperText sx={{ color: 'error.main' }}>{errors.image.message}</FormHelperText>
+                                    )}
+                                </Box>
+                            </label>
+                        )}
                         <Controller
                             name="image"
                             control={control}
-                            rules={{ required: true }}
+                            rules={{ required: false }}
                             render={({ field: { onChange } }) => (
                                 <input
                                     id="upload-image"
@@ -362,7 +417,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                         const file = e.target.files?.[0];
                                         if (file) {
                                             onChange(file);
-                                            setImagePre(URL.createObjectURL(file))
+                                            setImagePre(URL.createObjectURL(file));
                                         }
                                     }}
                                 />
@@ -377,7 +432,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                 rules={{ required: true }}
                                 render={({ field: { value, onChange } }) => (
                                     <TextField
-                                        label='Codigo'
+                                        label='Código del activo'
                                         placeholder='xyz-345'
                                         onChange={onChange}
                                         error={Boolean(errors.code)}
@@ -397,7 +452,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                 rules={{ required: true }}
                                 render={({ field: { value, onChange } }) => (
                                     <TextField
-                                        label='Nombre'
+                                        label='Nombre del activo'
                                         placeholder='Mesa'
                                         onChange={onChange}
                                         error={Boolean(errors.name)}
@@ -410,7 +465,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                     </Grid>
                     <Grid item xs={6}>
                         <FormControl fullWidth sx={{ mb: 6 }}>
-                            <InputLabel id="location-select">Ubicacion</InputLabel>
+                            <InputLabel id="location-select">Ubicación del activo</InputLabel>
                             <Controller
                                 name="location"
                                 control={control}
@@ -418,7 +473,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                     <Select
                                         labelId="location-select"
                                         id="select-location"
-                                        label="Ubicacion"
+                                        label="Ubicación del activo"
                                         value={value?._id ?? ''}
                                         error={Boolean(errors.location)}
                                         onChange={(e) => {
@@ -434,9 +489,10 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                 )}
                             />
                             {errors.location && <FormHelperText sx={{ color: 'error.main' }}>{errors.location?.message || errors.location.name?.message || errors.location._id?.message}</FormHelperText>}
+                            {!errors.location && <FormHelperText sx={{ color: 'secondary.main' }}>lugar donde se encuentra el activo</FormHelperText>}
                         </FormControl>
                     </Grid>
-                    {otherLocation?.name == 'otro' &&
+                    {otherLocation?.name == 'OTRO' &&
                         <Grid item xs={6}>
                             <FormControl fullWidth sx={{ mb: 3 }}>
                                 <Controller
@@ -445,7 +501,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                     rules={{ required: true }}
                                     render={({ field: { value, onChange } }) => (
                                         <TextField
-                                            label='Especifica otra ubicacion'
+                                            label='Especifica otra ubicación del activo'
                                             onChange={onChange}
                                             error={Boolean(errors.otherLocation)}
                                             value={value}
@@ -464,7 +520,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                 rules={{ required: true }}
                                 render={({ field: { value, onChange } }) => (
                                     <TextField
-                                        label='Precio de Aquicicion'
+                                        label='Precio de Adquisición'
                                         type="number"
                                         onChange={onChange}
                                         value={value}
@@ -483,7 +539,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                 rules={{ required: true }}
                                 render={({ field: { value, onChange } }) => (
                                     <TextField
-                                        label='Fecha de Aquicicion'
+                                        label='Fecha de Adquisición'
                                         type="date"
                                         onChange={onChange}
                                         error={Boolean(errors.date_a)}
@@ -492,25 +548,6 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                 )}
                             />
                             {errors.date_a && <FormHelperText sx={{ color: 'error.main' }}>{errors.date_a.message}</FormHelperText>}
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={6}>
-                        <FormControl fullWidth sx={{ mb: 3 }}>
-                            <Controller
-                                name="date_e"
-                                control={control}
-                                rules={{ required: true }}
-                                render={({ field: { value, onChange } }) => (
-                                    <TextField
-                                        label='Fecha de Expiracion'
-                                        type="date"
-                                        onChange={onChange}
-                                        error={Boolean(errors.date_e)}
-                                        value={value}
-                                    />
-                                )}
-                            />
-                            {errors.date_e && <FormHelperText sx={{ color: 'error.main' }}>{errors.date_e.message}</FormHelperText>}
                         </FormControl>
                     </Grid>
                     <Grid item xs={6}>
@@ -523,13 +560,14 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                     <Select
                                         labelId="category-select"
                                         id="select-category"
-                                        label="Categoria"
+                                        label="Categoría"
                                         value={value?._id ?? ''}
                                         error={Boolean(errors.category)}
                                         onChange={(e) => {
                                             const selectedId = e.target.value as string
                                             const selectedCategory = category.find((cat) => cat._id === selectedId) || null
                                             onChange(selectedCategory)
+                                            setValue('subcategory', null)
                                         }}
                                     >
                                         {category.map((cat, index) => (
@@ -541,29 +579,49 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                             {errors.category && <FormHelperText sx={{ color: 'error.main' }}>{errors.category?.message || errors.category.name?.message || errors.category._id?.message}</FormHelperText>}
                         </FormControl>
                     </Grid>
-                    {otherCategory?.name == 'otro' &&
+                    {selectCategory && selectCategory?.subcategory?.length > 0 && (
                         <Grid item xs={6}>
-                            <FormControl fullWidth sx={{ mb: 3 }}>
+                            <FormControl fullWidth sx={{ mb: 6 }}>
+                                <InputLabel id="subcategory-select">Sub Categoría</InputLabel>
                                 <Controller
-                                    name="otherCategory"
+                                    name="subcategory"
                                     control={control}
-                                    rules={{ required: true }}
-                                    render={({ field: { value, onChange } }) => (
-                                        <TextField
-                                            label='Especifica otra categoria'
-                                            onChange={onChange}
-                                            error={Boolean(errors.otherCategory)}
-                                            value={value}
-                                        />
+                                    render={({ field: { onChange, value } }) => (
+                                        <Select
+                                            labelId="subcategory-select"
+                                            id="select-subcategory"
+                                            label="Sub Categoría"
+                                            value={value?._id ?? ''}
+                                            error={Boolean(errors.subcategory)}
+                                            onChange={(e) => {
+                                                const selectedId = e.target.value as string
+                                                const selectedSubCategory =
+                                                    selectCategory?.subcategory.find((sub) => sub._id === selectedId) || null
+                                                onChange(selectedSubCategory)
+                                            }}
+                                        >
+                                            {selectCategory?.subcategory.map((sub, index) => (
+                                                <MenuItem key={index} value={sub._id}>
+                                                    {sub.name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
                                     )}
                                 />
-                                {errors.otherCategory && <FormHelperText sx={{ color: 'error.main' }}>{errors.otherCategory.message}</FormHelperText>}
+                                {errors.subcategory && (
+                                    <FormHelperText sx={{ color: 'error.main' }}>
+                                        {errors.subcategory?.message ||
+                                            errors.subcategory?.name?.message ||
+                                            errors.subcategory?._id?.message}
+                                    </FormHelperText>
+                                )}
                             </FormControl>
                         </Grid>
-                    }
+                    )}
+
                     <Grid item xs={6}>
                         <FormControl fullWidth sx={{ mb: 6 }}>
-                            <InputLabel id="status-select">Estado</InputLabel>
+                            <InputLabel id="status-select">Estado de activo</InputLabel>
                             <Controller
                                 name="status"
                                 control={control}
@@ -571,7 +629,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                     <Select
                                         labelId="status-select"
                                         id="select-status"
-                                        label="Estado"
+                                        label="Estado del activo"
                                         value={value?._id ?? ''}
                                         onChange={(e) => {
                                             const selectedId = e.target.value as string
@@ -590,7 +648,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                         </FormControl>
                     </Grid>
 
-                    {otherStatus?.name == 'otro' &&
+                    {otherStatus?.name == 'Otro' &&
                         <Grid item xs={6}>
                             <FormControl fullWidth sx={{ mb: 3 }}>
                                 <Controller
@@ -599,7 +657,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                     rules={{ required: true }}
                                     render={({ field: { value, onChange } }) => (
                                         <TextField
-                                            label='Especifica otro estado'
+                                            label='Especifica otro estado del activo'
                                             onChange={onChange}
                                             error={Boolean(errors.otherStatus)}
                                             value={value}
@@ -619,7 +677,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                     <Autocomplete
                                         options={responsable}
                                         getOptionLabel={(option) =>
-                                            option ? `${option.grade || ''} ${option.name || ''} ${option.lastName || ''}` : ''
+                                            option ? `${option.grade?.name || ''} ${option.name || ''} ${option.lastName || ''}` : ''
                                         }
                                         value={value || null}
                                         isOptionEqualToValue={(option, value) => option._id === value._id}

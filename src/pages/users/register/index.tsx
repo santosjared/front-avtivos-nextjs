@@ -25,12 +25,18 @@ const MenuProps = {
     },
 };
 
+interface GradeType {
+    name: string
+    _id: string
+}
+
 interface DefaultUserType {
     name: string,
     lastName: string,
     gender: string,
     email: string,
-    grade: string,
+    grade: GradeType | null,
+    otherGrade: string
     ci: string,
     exp: string
     phone: string,
@@ -49,79 +55,109 @@ interface Props {
     defaultValues?: DefaultUserType;
 }
 
-const showErrors = (field: string, valueLen: number, min: number) => {
-    if (valueLen === 0) {
-        return `El campo ${field} es requerido`
-    } else if (valueLen > 0 && valueLen < min) {
-        return `El campo ${field} debe tener al menos ${min} caracteres`
-    } else {
-        return ''
-    }
-}
-
-
 
 const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Props) => {
 
 
     const [showPassword, setShowPassword] = useState(false)
     const [roles, setRoles] = useState<Rol[]>([])
+    const [grades, setGrades] = useState<GradeType[]>([])
+
+    const checkemail = defaultValues?.email
 
     const schema = yup.object().shape({
-        grade: yup.string().required('El campo grado es requerido'),
-        name: yup.string().required('El campo nombres es requerido')
+        grade: yup
+            .object({
+                _id: yup.string().required('El campo grado es requerido'),
+                name: yup.string().required('El campo grado es requerido'),
+            })
+            .nullable()
+            .default(null)
+            .required('Debe seleccionar un grado'),
+
+        otherGrade: yup
+            .string()
+            .when('grade', {
+                is: (val: unknown) => (val as GradeType)?.name === 'Otro',
+                then: schema =>
+                    schema
+                        .required('Debe especificar el otro grado')
+                        .min(2, 'El campo otro grado debe tener al menos 2 caracteres')
+                        .max(50, 'El campo otro grado no debe tener más de 50 caracteres'),
+                otherwise: schema => schema.notRequired()
+            }),
+
+        name: yup
+            .string()
+            .required('El campo nombres es requerido')
             .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El nombre solo debe contener letras')
-            .min(4, obj => showErrors('nombres', obj.value.length, obj.min)),
-        lastName: yup.string().required('El campo apellidos es requerido')
+            .min(4, 'El campo nombres debe tener al menos 4 caracteres')
+            .max(50, 'El campo nombres no debe tener más de 50 caracteres'),
+
+        lastName: yup
+            .string()
+            .required('El campo apellidos es requerido')
             .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El campo apellido solo debe contener letras')
-            .min(4, obj => showErrors('apellidos', obj.value.length, obj.min)),
-        email: yup.string().email('El correo electrónico debe ser un correo electrónico válido')
-            .required('El campo correo electrónico es requerido'),
-        ci: yup.string().required('El campo ci es requerido')
-            .min(4, obj => showErrors('ci', obj.value.length, obj.min)),
-        exp: yup.string().required('Seleccione la expedición del carnet'),
+            .min(4, 'El campo apellidos debe tener al menos 4 caracteres')
+            .max(50, 'El campo apellidos no debe tener más de 50 caracteres'),
+
+        email: yup
+            .string()
+            .email('El correo electrónico debe ser un correo electrónico válido')
+            .required('El campo correo electrónico es requerido')
+            .max(100, 'El campo correo electrónico no debe tener más de 100 caracteres'),
+
+        ci: yup
+            .string()
+            .required('El campo CI es requerido')
+            .min(4, 'El campo CI debe tener al menos 4 caracteres')
+            .max(20, 'El campo CI no debe tener más de 20 caracteres'),
+
+        exp: yup
+            .string()
+            .required('Seleccione la expedición del carnet')
+            .max(20, 'El campo expedición no debe tener más de 20 caracteres'),
+
         phone: yup
-            .number()
-            .typeError('El celular debe ser un número')
-            .min(10, obj => showErrors('celular', obj.value.length, obj.min))
+            .string()
+            .trim()
+            .matches(/^[0-9]+$/, 'El celular debe contener solo números')
+            .min(6, 'El campo celular debe tener al menos 6 caracteres')
+            .max(15, 'El campo celular no debe tener más de 15 caracteres')
             .required('El campo celular es requerido'),
+
         address: yup
             .string()
-            .min(3, obj => showErrors('dirección', obj.value.length, obj.min))
+            .min(3, 'El campo dirección debe tener al menos 3 caracteres')
+            .max(100, 'El campo dirección no debe tener más de 100 caracteres')
             .required('El campo dirección es requerido'),
+
         password: mode === 'create'
             ? yup
                 .string()
-                .min(8, obj => showErrors('contraseña', obj.value.length, obj.min))
-                .max(32, 'La contraseña no debe ser mayor a 32 caracteres')
+                .min(8, 'La contraseña debe tener al menos 8 caracteres')
+                .max(32, 'La contraseña no debe tener más de 32 caracteres')
                 .required('El campo contraseña es requerido')
             : yup
                 .string()
-                .transform(value => (value === '' ? undefined : value)) // elimina string vacío
+                .transform(value => (value === '' ? undefined : value))
                 .min(8, 'El campo contraseña debe tener al menos 8 caracteres')
-                .max(32, 'La contraseña no debe ser mayor a 32 caracteres')
+                .max(32, 'La contraseña no debe tener más de 32 caracteres')
                 .notRequired(),
-        gender: yup.string().required('Este campo es obligatorio'),
+
+        gender: yup
+            .string()
+            .required('Debe seleccionar algún sexo')
+            .max(10, 'El campo sexo no debe tener más de 10 caracteres'),
+
         rol: yup
             .array()
             .min(1, 'Debe seleccionar al menos un rol')
+            .max(5, 'No puede seleccionar más de 5 roles')
             .required('Debe seleccionar al menos un rol'),
-
-    })
-
+    });
     const dispatch = useDispatch<AppDispatch>()
     const theme = useTheme()
-
-    const {
-        reset,
-        control,
-        handleSubmit,
-        formState: { errors }
-    } = useForm<DefaultUserType>({
-        defaultValues,
-        mode: 'onChange',
-        resolver: yupResolver(schema)
-    });
 
     useEffect(() => {
         const fetchRol = async () => {
@@ -134,19 +170,73 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
 
         }
         fetchRol();
-    }, [mode]);
+    }, [mode, page, pageSize, defaultValues]);
+
+    useEffect(() => {
+        const fetch = async () => {
+            try {
+                const response = await instance.get('/users/grades')
+                setGrades([...response.data, { name: 'Otro', _id: 'Other' }])
+            } catch (error) {
+                console.log('error al solicitar grados', error)
+            }
+        }
+        fetch()
+    }, [mode, page, pageSize, defaultValues, toggle])
+
+    const {
+        reset,
+        control,
+        watch,
+        handleSubmit,
+        setError,
+        formState: { errors }
+    } = useForm<DefaultUserType>({
+        defaultValues,
+        mode: 'onChange',
+        resolver: yupResolver(schema)
+    });
+
+    const otherGrade = watch('grade')
 
     useEffect(() => {
         reset(defaultValues)
     }, [defaultValues, mode])
 
 
-    const onSubmit = (data: DefaultUserType) => {
-        if (mode === 'edit' && defaultValues?._id) {
-            const { _id, __v, ...newData } = data
-            dispatch(updateUser({ data: newData, id: defaultValues._id, filtrs: { skip: page * pageSize, limit: pageSize } }))
-        } else {
-            dispatch(addUser({ data, filtrs: { skip: page * pageSize, limit: pageSize } }))
+    const onSubmit = async (data: DefaultUserType) => {
+
+        try {
+            const newData = {
+                ...data,
+                grade: data.grade?._id
+            }
+            if (mode === 'edit' && defaultValues?._id) {
+                if (data.email !== checkemail) {
+                    const check = await instance.get(`/users/check-email/${data.email}`);
+                    if (check.data) {
+                        setError('email', {
+                            type: 'manual',
+                            message: 'Este correo ya está registrado'
+                        });
+                        return;
+                    }
+                }
+                delete newData._id
+                dispatch(updateUser({ data: newData, id: defaultValues._id, filtrs: { skip: page * pageSize, limit: pageSize } }))
+            } else {
+                const check = await instance.get(`/users/check-email/${data.email}`);
+                if (check.data) {
+                    setError('email', {
+                        type: 'manual',
+                        message: 'Este correo ya está registrado'
+                    });
+                    return;
+                }
+                dispatch(addUser({ data: newData, filtrs: { skip: page * pageSize, limit: pageSize } }))
+            }
+        } catch (error) {
+            console.error('Error al guardar usuario:', error);
         }
 
         toggle()
@@ -169,44 +259,49 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
                                 <Controller
                                     name="grade"
                                     control={control}
-                                    render={({ field }) => (
+                                    render={({ field: { value, onChange } }) => (
                                         <Select
-                                            {...field}
                                             labelId="grade-select"
                                             id="select-grade"
                                             label="Grado"
                                             error={Boolean(errors.grade)}
+                                            value={value?._id ?? ''}
+                                            onChange={(e) => {
+                                                const selectedId = e.target.value as string
+                                                const selectedGrade = grades.find((grade) => grade._id === selectedId) || null
+                                                onChange(selectedGrade)
+                                            }}
                                         >
-                                            <MenuItem value='CNL. MSc. CAD.'>
-                                                CNL. MSc. CAD.
-                                            </MenuItem>
-                                            <MenuItem value='TTE.'>
-                                                TTE.
-                                            </MenuItem>
-                                            <MenuItem value='SBTTE.'>
-                                                SBTTE.
-                                            </MenuItem>
-                                            <MenuItem value='SOF. 2DO'>
-                                                SOF. 2DO
-                                            </MenuItem>
-                                            <MenuItem value='SGTO. MY.'>
-                                                SGTO. MY.
-                                            </MenuItem>
-                                            <MenuItem value='SGTO. 1RO.'>
-                                                SGTO. 1RO.
-                                            </MenuItem>
-                                            <MenuItem value='SGTO. 2DO.'>
-                                                SGTO. 2DO.
-                                            </MenuItem>
-                                            <MenuItem value='SGTO.'>
-                                                SGTO.
-                                            </MenuItem>
+                                            {grades.map((value) => (<MenuItem
+                                                value={value._id || ''}
+                                                key={value._id}
+                                            >{value.name}</MenuItem>))}
                                         </Select>
                                     )}
                                 />
-                                {errors.grade && <FormHelperText sx={{ color: 'error.main' }}>{errors.grade.message}</FormHelperText>}
+                                {errors.grade && <FormHelperText sx={{ color: 'error.main' }}>{errors.grade?.message || errors.grade.name?.message || errors.grade._id?.message}</FormHelperText>}
                             </FormControl>
                         </Grid>
+                        {otherGrade?.name == 'Otro' &&
+                            <Grid item xs={6}>
+                                <FormControl fullWidth sx={{ mb: 3 }}>
+                                    <Controller
+                                        name="otherGrade"
+                                        control={control}
+                                        rules={{ required: true }}
+                                        render={({ field: { value, onChange } }) => (
+                                            <TextField
+                                                label='Especifica otro grado'
+                                                onChange={(e) => onChange(e.target.value.toUpperCase())}
+                                                error={Boolean(errors.otherGrade)}
+                                                value={value}
+                                            />
+                                        )}
+                                    />
+                                    {errors.otherGrade && <FormHelperText sx={{ color: 'error.main' }}>{errors.otherGrade.message}</FormHelperText>}
+                                </FormControl>
+                            </Grid>
+                        }
                         <Grid item xs={6}>
                             <FormControl fullWidth sx={{ mb: 6 }}>
                                 <Controller
@@ -468,7 +563,6 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
                                     </FormHelperText>
                                 )}
                             </FormControl>
-
                         </Grid>
                     </Grid>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>

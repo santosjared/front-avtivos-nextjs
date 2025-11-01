@@ -2,9 +2,18 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import { instance } from 'src/configs/axios'
 import Swal from 'sweetalert2'
 
-interface CategoryType {
-    _id: string
+interface SubCategoryType {
+    _id?: string
     name: string
+    util: number
+}
+
+interface ContableType {
+    _id: string
+    name: string,
+    util: number,
+    subcategory: SubCategoryType[]
+    description?: string
 }
 
 interface StatusType {
@@ -17,29 +26,32 @@ interface LocationType {
     name: string
 }
 
+interface GradeType {
+    name: string
+    _id: string
+}
+
 interface ResponsableType {
     _id: string
-    grade: string
+    grade: GradeType
     name: string
     lastName: string
 }
 
 interface ActivosType {
-    _id: string
+    _id?: string
     code: string,
     responsable: ResponsableType | null,
     name: string,
-    location: LocationType,
+    location: LocationType | null,
     price_a: number,
     date_a: string,
-    date_e: string,
-    cantidad: number,
     image: File | null,
     imageUrl: string | null,
-    status: StatusType
+    status: StatusType | null
     otherStatus: string,
-    category: CategoryType
-    otherCategory: string
+    category: ContableType | null
+    subcategory: SubCategoryType | null
     otherLocation: string
     description: string
 }

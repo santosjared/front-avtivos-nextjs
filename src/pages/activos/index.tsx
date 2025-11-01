@@ -1,4 +1,4 @@
-import { Box, Button, Card, FormControl, Grid, IconButton, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material"
+import { Box, Button, Card, FormControl, Grid, IconButton, InputLabel, MenuItem, Select, TextField, Tooltip, Typography, useTheme } from "@mui/material"
 import { DataGrid } from "@mui/x-data-grid"
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux";
@@ -12,9 +12,18 @@ import Swal from 'sweetalert2'
 import CustomChip from 'src/@core/components/mui/chip'
 import { instance } from "src/configs/axios";
 
-interface CategoryType {
-    _id: string
+interface SubCategoryType {
+    _id?: string
     name: string
+    util: number
+}
+
+interface ContableType {
+    _id: string
+    name: string,
+    util: number,
+    subcategory: SubCategoryType[]
+    description?: string
 }
 
 interface StatusType {
@@ -27,29 +36,32 @@ interface LocationType {
     name: string
 }
 
+interface GradeType {
+    name: string
+    _id: string
+}
+
 interface ResponsableType {
     _id: string
-    grade: string
+    grade: GradeType
     name: string
     lastName: string
 }
 
 interface ActivosType {
-    _id: string
+    _id?: string
     code: string,
     responsable: ResponsableType | null,
     name: string,
-    location: LocationType,
+    location: LocationType | null,
     price_a: number,
     date_a: string,
-    date_e: string,
-    cantidad: number,
     image: File | null,
     imageUrl: string | null,
-    status: StatusType
+    status: StatusType | null
     otherStatus: string,
-    category: CategoryType
-    otherCategory: string
+    category: ContableType | null
+    subcategory: SubCategoryType | null
     otherLocation: string
     description: string
 }
@@ -62,30 +74,18 @@ interface CellType {
 const today = new Date().toISOString().split('T')[0]
 
 const defaultValues: ActivosType = {
-    _id: '',
     code: '',
     responsable: null,
     name: '',
-    location: {
-        _id: '',
-        name: ''
-    },
+    location: null,
     price_a: 0,
     date_a: today,
-    date_e: today,
-    cantidad: 0,
-    status: {
-        _id: '',
-        name: ''
-    },
+    status: null,
     otherStatus: '',
     image: null,
     imageUrl: null,
-    category: {
-        _id: '',
-        name: ''
-    },
-    otherCategory: '',
+    category: null,
+    subcategory: null,
     otherLocation: '',
     description: ''
 }
@@ -100,9 +100,11 @@ const Activos = () => {
     const [drawOpen, setDrawOpen] = useState<boolean>(false)
     const [mode, setMode] = useState<'create' | 'edit'>('create')
     const [activos, setActivos] = useState<ActivosType>(defaultValues)
-    const [category, setCategory] = useState<CategoryType[]>([])
+    const [category, setCategory] = useState<ContableType[]>([])
+    const [subcategory, setSubCategory] = useState<SubCategoryType[]>([])
     const [status, setStatus] = useState<StatusType[]>([])
-    const [selectedCategory, setSelectedCategory] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('');
+    const [selectedSubCategory, setSelectedSubcategory] = useState<string>('')
     const [selectedStatus, setSelectedStatus] = useState('');
 
     const toggleDrawer = () => setDrawOpen(!drawOpen)
@@ -117,28 +119,41 @@ const Activos = () => {
     useEffect(() => {
         const fectCategory = async () => {
             try {
-                const response = await instance.get('/activos/category')
+                const response = await instance.get('/contables')
                 const data = response.data
-                setCategory(data)
+                setCategory(data || [])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
         }
         fectCategory();
-    }, [mode, open])
+    }, [])
+
+    useEffect(() => {
+        const fectStatus = async () => {
+            try {
+                const response = await instance.get('/contables/subcategories')
+                const data = response.data
+                setSubCategory(data || [])
+            } catch (error) {
+                console.error('error al extraer la sub categoria', error)
+            }
+        }
+        fectStatus();
+    }, [])
 
     useEffect(() => {
         const fectStatus = async () => {
             try {
                 const response = await instance.get('/activos/status')
                 const data = response.data
-                setStatus(data)
+                setStatus(data || [])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
         }
         fectStatus();
-    }, [mode, open])
+    }, [mode, drawOpen])
 
     const handleFilters = (value: string) => {
         dispatch(fetchData({ field: value, skip: page * pageSize, limit: pageSize }))
@@ -154,14 +169,14 @@ const Activos = () => {
 
         const dispatch = useDispatch<AppDispatch>()
 
+        const theme = useTheme()
+
         const handleEdit = () => {
-            const date_e = new Date(activo.date_e)
-            const form_e = `${date_e.getFullYear()}-${String(date_e.getMonth() + 1).padStart(2, '0')}-${String(date_e.getDate()).padStart(2, '0')}`
 
             const date_a = new Date(activo.date_a)
             const form_a = `${date_a.getFullYear()}-${String(date_a.getMonth() + 1).padStart(2, '0')}-${String(date_a.getDate()).padStart(2, '0')}`
 
-            setActivos({ ...activo, date_a: form_a, date_e: form_e })
+            setActivos({ ...activo, date_a: form_a })
             setMode('edit')
             toggleDrawer()
         }
@@ -169,16 +184,16 @@ const Activos = () => {
         const handleDelete = async () => {
 
             const confirme = await Swal.fire({
-                title: '¿Estas seguro de eliminar?',
+                title: `¿Estas seguro de eliminar el activo ${activo.name} - Código: ${activo.code}?`,
                 icon: "warning",
                 showCancelButton: true,
-                cancelButtonColor: "#3085d6",
+                cancelButtonColor: theme.palette.info.main,
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#ff4040',
+                confirmButtonColor: theme.palette.error.main,
                 confirmButtonText: 'Eliminar',
             }).then(async (result) => { return result.isConfirmed });
             if (confirme) {
-                dispatch(deleteActivos({ id: activo._id, filtrs: { field: '', skip: page * pageSize, limit: pageSize } }))
+                dispatch(deleteActivos({ id: activo._id || '', filtrs: { field: '', skip: page * pageSize, limit: pageSize } }))
             }
         }
 
@@ -195,144 +210,110 @@ const Activos = () => {
     }
     const columns = [
         {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'code',
-            sortable: false,
-            headerName: 'Codigo',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.code}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 120,
-            field: 'name',
-            sortable: false,
-            headerName: 'Nombre',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.name}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 120,
-            field: 'location',
-            headerName: 'Ubicacion',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.location?.name}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 50,
-            field: 'price_a',
-            headerName: 'Precio de Adquicion',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.price_a}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'date_a',
-            headerName: 'Fecha de Adquicion',
-            renderCell: ({ row }: CellType) => {
-                const date = new Date(row.date_e)
-                const form = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-                return (
-                    <Typography variant='body2' noWrap>{form}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'date_e',
-            headerName: 'Fecha de expiracion',
-            renderCell: ({ row }: CellType) => {
-                const date = new Date(row.date_e)
-                const form = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-                return (
-                    <Typography variant='body2' noWrap>{form}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'photo',
-            headerName: 'Foto',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Box sx={{ width: 40, height: 40, borderRadius: '3px' }}>
-                        <img
-                            src={`${baseUrl().backendURI}/images/${row.imageUrl}`}
-                            style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: '3px'
-                            }}
-                            alt="im"
-                        />
-                    </Box>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'category',
-            headerName: 'Categoria',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.category?.name}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 190,
-            field: 'responsable',
-            headerName: 'Responsable',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Typography variant='body2' noWrap>{row.responsable?.grade} {row.responsable?.name} {row.responsable?.lastName}</Typography>
-                )
-            }
-        },
-        {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'status',
-            headerName: 'Estado',
+            field: 'code', headerName: 'Código', minWidth: 100, flex: 0.1,
             renderCell: ({ row }: CellType) => (
-                <CustomChip
-                    skin='light'
-                    size='small'
-                    label={row.status?.name}
-                    color={row.status?.name === 'Bueno' ? 'success' : row.status?.name === 'Regular' ? 'warning' : row.status?.name === 'Malo' ? 'error' : 'info'}
-                    sx={{ textTransform: 'capitalize' }}
-                />
+                <Tooltip title={row.code}><Typography variant="body2" noWrap>{row.code}</Typography></Tooltip>
             )
         },
         {
-            flex: 0.2,
-            minWidth: 90,
-            field: 'actions',
-            sortable: false,
-            headerName: 'Acciones',
+            field: 'name', headerName: 'Nombre del activo', minWidth: 160, flex: 0.16,
+            renderCell: ({ row }: CellType) => (
+                <Tooltip title={row.name}><Typography variant="body2" noWrap>{row.name}</Typography></Tooltip>
+            )
+        },
+        {
+            field: 'location', headerName: 'Ubicación', minWidth: 160, flex: 0.16,
+            renderCell: ({ row }: CellType) => (
+                <Tooltip title={row.location?.name}><Typography variant="body2" noWrap>{row.location?.name}</Typography></Tooltip>
+            )
+        },
+        {
+            field: 'price_a', headerName: 'Precio de Adquisición', minWidth: 120, flex: 0.12,
+            renderCell: ({ row }: CellType) => <Typography variant="body2" noWrap>{row.price_a}</Typography>
+        },
+        {
+            field: 'date_a', headerName: 'Fecha de Adquisición', minWidth: 130, flex: 0.13,
             renderCell: ({ row }: CellType) => {
-                return (<RowOptions activo={row} />)
+                const date = new Date(row.date_a)
+                const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+                return <Typography variant="body2" noWrap>{formatted}</Typography>
             }
+        },
+        {
+            field: 'photo', headerName: 'Foto', minWidth: 80, flex: 0.08,
+            renderCell: ({ row }: CellType) => (
+                <Box sx={{ width: 40, height: 40 }}>
+                    <img
+                        src={`${baseUrl().backendURI}/images/${row.imageUrl}`}
+                        alt='Activo'
+                        style={{ width: 40, height: 40, borderRadius: 3 }}
+                    />
+                </Box>
+            )
+        },
+        {
+            field: 'category', headerName: 'Categoría', minWidth: 140, flex: 0.14,
+            renderCell: ({ row }: CellType) => <Typography variant="body2" noWrap>{row.category?.name}</Typography>
+        },
+        {
+            field: 'subcategory', headerName: 'Sub Categoría', minWidth: 140, flex: 0.14,
+            renderCell: ({ row }: CellType) => <Typography variant="body2" noWrap>{row.subcategory?.name}</Typography>
+        },
+        {
+            field: 'responsable', headerName: 'Responsable', minWidth: 190, flex: 0.19,
+            renderCell: ({ row }: CellType) => {
+                const text = `${row.responsable?.grade?.name || ''} ${row.responsable?.name || ''} ${row.responsable?.lastName || ''}`
+                return (
+                    <Tooltip title={text}>
+                        <Typography variant="body2" noWrap>{text}</Typography>
+                    </Tooltip>
+                )
+            }
+        },
+        {
+            field: 'status',
+            headerName: 'Estado',
+            minWidth: 90,
+            flex: 0.09,
+            renderCell: ({ row }: CellType) => (
+                <Tooltip title={row.status?.name || ''} arrow>
+                    <span>
+                        <CustomChip
+                            skin='light'
+                            size='small'
+                            label={row.status?.name}
+                            rounded
+                            color={
+                                row.status?.name === 'Bueno' ? 'success' :
+                                    row.status?.name === 'Regular' ? 'warning' :
+                                        row.status?.name === 'Malo' ? 'error' : 'info'
+                            }
+                        />
+                    </span>
+                </Tooltip>
+            )
+        },
+        {
+            field: 'description', headerName: 'Descripción', minWidth: 200, flex: 0.2,
+            renderCell: ({ row }: CellType) => (
+                <Tooltip title={row.description}>
+                    <Typography
+                        variant='body2'
+                        sx={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        {row.description}
+                    </Typography>
+                </Tooltip>
+            )
+        },
+        {
+            field: 'actions', headerName: 'Acciones', minWidth: 90, flex: 0.09, sortable: false,
+            renderCell: ({ row }: CellType) => <RowOptions activo={row} />
         }
     ]
 
@@ -352,11 +333,12 @@ const Activos = () => {
                             }}
                         >
                             <FormControl>
-                                <InputLabel id="category-select">Categoria</InputLabel>
+                                <InputLabel id="category-select">Categoría</InputLabel>
                                 <Select
                                     labelId="category-select"
                                     id="select-category"
-                                    label="Categoria"
+                                    label="Categoría"
+                                    disabled={category.length === 0}
                                     value={selectedCategory}
                                     onChange={(e) => {
                                         const selected = e.target.value
@@ -365,6 +347,25 @@ const Activos = () => {
                                     }}
                                 >
                                     {category.map((cat, index) => (
+                                        <MenuItem value={cat.name} key={index}>{cat.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <FormControl>
+                                <InputLabel id="subcategory-select">Sub Categoría</InputLabel>
+                                <Select
+                                    labelId="subcategory-select"
+                                    id="select-subcategory"
+                                    label="Sub Categoría"
+                                    disabled={subcategory.length === 0}
+                                    value={selectedSubCategory}
+                                    onChange={(e) => {
+                                        const selected = e.target.value
+                                        setSelectedSubcategory(selected)
+                                        handleFilters(selected)
+                                    }}
+                                >
+                                    {subcategory.map((cat, index) => (
                                         <MenuItem value={cat.name} key={index}>{cat.name}</MenuItem>
                                     ))}
                                 </Select>
@@ -470,7 +471,7 @@ const Activos = () => {
 
                 </Card>
             </Grid>
-            <AddDraw open={drawOpen} toggle={toggleDrawer} title={mode === 'create' ? 'Registro del rol' : 'Editar rol'}>
+            <AddDraw open={drawOpen} toggle={toggleDrawer} title={mode === 'create' ? 'Registro del activo fijo' : 'Editar activo fijo'}>
                 <AddActivos
                     toggle={toggleDrawer}
                     page={page}

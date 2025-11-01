@@ -28,6 +28,12 @@ const navigation = (): VerticalNavItemsType => {
       icon: 'mdi:bank-outline'
     },
     {
+      title: 'Grupos contables',
+      path: '/contable',
+      subject: 'contable',
+      icon: 'mdi:monitor-cellphone'
+    },
+    {
       title: 'Entrega de activos',
       path: '/borrowing',
       subject: 'borrowing',
@@ -38,12 +44,6 @@ const navigation = (): VerticalNavItemsType => {
       path: '/return',
       subject: 'return',
       icon: 'mdi:human-dolly'
-    },
-    {
-      title: 'Grupos contables',
-      path: '/accountants',
-      subject: 'accountants',
-      icon: 'mdi:monitor-cellphone'
     },
     {
       title: 'Depreciación',

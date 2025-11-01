@@ -116,11 +116,29 @@ const LoginPage = () => {
 
   return (
     <Box sx={{ background: theme => theme.palette.primary.main, height: '100vh' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'center', }}>
-        <Typography variant='h1' color='white' fontFamily='cursive' sx={{
-          fontSize: { xs: '1.2rem', sm: '2.4rem' }
-        }} >Bienvenido al sistema de {themeConfig.templateName}</Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          textAlign: 'center',
+          pl: { xs: 0, sm: 20 },
+          pr: { xs: 0, sm: 20 },
+        }}
+      >
+        <Typography
+          variant="h1"
+          color="white"
+          fontFamily="cursive"
+          sx={{
+            fontSize: { xs: '1.2rem', sm: '2.4rem' },
+            lineHeight: 1.5,
+            whiteSpace: 'pre-line',
+          }}
+        >
+          BIENVENIDOS A DIRECCION DEPARTAMENTAL DE BOMBEROS "CARACOLES POTOSI"
+        </Typography>
       </Box>
+
       <Box sx={{
         display: 'flex',
         justifyContent: 'center',

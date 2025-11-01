@@ -1,5 +1,5 @@
-import React, { useState, MouseEvent, useEffect, ChangeEvent, Fragment } from 'react'
-import { Box, Button, Card, CardHeader, FormControl, Grid, IconButton, TextField, Typography } from '@mui/material'
+import React, { useState, MouseEvent, useEffect, Fragment } from 'react'
+import { Box, Button, Card, Grid, IconButton, TextField, Typography } from '@mui/material'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import { DataGrid } from "@mui/x-data-grid"
@@ -9,18 +9,11 @@ import AddDraw from 'src/components/draw'
 import { RootState, AppDispatch } from 'src/store'
 import { dowUser, fetchData, upUser } from 'src/store/user'
 import { useSelector } from 'react-redux'
-import CustomAvatar from 'src/@core/components/mui/avatar'
-import { getInitials } from 'src/@core/utils/get-initials'
 import CustomChip from 'src/@core/components/mui/chip'
 import AddUser from './register'
 import { UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
 
-
-
-interface CellType {
-    row: UserType
-}
 interface UserRoleType {
     [key: string]: { icon: string; color: string }
 }
@@ -30,21 +23,10 @@ const userRoleObj: UserRoleType = {
     other: { icon: 'mdi:account-outline', color: 'info.main' }
 }
 
-
-
-const renderClient = (row: UserType) => {
-
-    return (
-        <CustomAvatar
-            skin='light'
-            color='primary'
-            sx={{ mr: 3, width: 34, height: 34, fontSize: '1rem' }}
-        >
-            {getInitials(row.name && row.lastName ? `${row.name} ${row.lastName}` : row.name ? row.name : 'Desconocido')}
-        </CustomAvatar>
-    )
+interface GradeType {
+    name: string
+    _id: string
 }
-
 interface DefaultUserType {
     name: string,
     lastName: string,
@@ -54,9 +36,11 @@ interface DefaultUserType {
     phone: string,
     address: string,
     exp: string,
-    grade: string
+    grade: GradeType | null,
+    otherGrade: string
     password: string,
     rol: string[]
+    _id?: string
 }
 
 const defaultValues: DefaultUserType = {
@@ -68,10 +52,16 @@ const defaultValues: DefaultUserType = {
     phone: '',
     address: '',
     exp: '',
-    grade: '',
+    grade: null,
+    otherGrade: '',
     password: '',
     rol: []
 }
+
+interface CellType {
+    row: UserType
+}
+
 const Users = () => {
 
     const [pageSize, setPageSize] = useState<number>(10)
@@ -89,13 +79,13 @@ const Users = () => {
             headerName: 'Grado',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography variant='body2'>{row.grade}</Typography>
+                    <Typography variant='body2'>{row.grade?.name}</Typography>
                 )
             }
         },
         {
             flex: 0.2,
-            minWidth: 190,
+            minWidth: 150,
             field: 'name',
             headerName: 'Nombres',
             renderCell: ({ row }: CellType) => {
@@ -175,34 +165,64 @@ const Users = () => {
             }
         },
         {
+            flex: 0.2,
+            minWidth: 200,
+            field: 'email',
+            sortable: false,
+            headerName: 'email',
+            renderCell: ({ row }: CellType) => {
+                return (
+                    <Typography noWrap variant='body2'>{row.email}</Typography>
+                )
+            }
+        },
+        {
             flex: 0.15,
             field: 'rol',
             minWidth: 150,
             headerName: 'Rol',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Box>
-                        {row.rol.length == 0 ? 'Niguno' :
-                            <Fragment>
-                                {
-                                    row.rol.map((rol) => (
-                                        <Box key={rol.name} sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            '& svg': { mr: 3, color: userRoleObj[rol.name != 'admin' && rol.name != 'user' ? 'other' : rol.name].color }
-                                        }}>
-                                            <Icon icon={userRoleObj[rol.name != 'admin' && rol.name != 'user' ? 'other' : rol.name].icon} fontSize={20} />
-                                            <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
-                                                {rol.name}
-                                            </Typography>
-                                        </Box>
-                                    ))
-                                }
-                            </Fragment>
-                        }
-                    </Box>
-                )
-            }
+            renderCell: ({ row }: CellType) => (
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                    py: 1,
+                }}>
+                    {row.rol.length === 0 ? (
+                        <Typography variant='body2'>Ninguno</Typography>
+                    ) : (
+                        row.rol.map((rol) => (
+                            <Box
+                                key={rol.name}
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    '& svg': {
+                                        mr: 1,
+                                        color: userRoleObj[
+                                            rol.name !== 'admin' && rol.name !== 'user' ? 'other' : rol.name
+                                        ].color
+                                    },
+                                }}
+                            >
+                                <Icon
+                                    icon={userRoleObj[
+                                        rol.name !== 'admin' && rol.name !== 'user' ? 'other' : rol.name
+                                    ].icon}
+                                    fontSize={18}
+                                />
+                                <Typography
+                                    noWrap={false}
+                                    variant='body2'
+                                    sx={{ textTransform: 'capitalize' }}
+                                >
+                                    {rol.name}
+                                </Typography>
+                            </Box>
+                        ))
+                    )}
+                </Box>
+            )
         },
         {
             flex: 0.15,
@@ -280,7 +300,8 @@ const Users = () => {
 
             setUserData({
                 ...user,
-                rol
+                rol,
+                otherGrade: ''
             });
 
             setMode('edit');
@@ -344,7 +365,7 @@ const Users = () => {
 
 
     const toggleDrawer = () => setDrawOpen(!drawOpen)
-    const handleFilters = () => {
+    const handleFilters = (field: string) => {
         dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
     }
     return (
@@ -382,7 +403,7 @@ const Users = () => {
 
                                 <Button
                                     variant="outlined"
-                                    onClick={handleFilters}
+                                    onClick={() => handleFilters(field)}
                                     startIcon={<Icon icon='mdi:search' />}
                                     sx={{
                                         borderRadius: 0,
@@ -394,6 +415,7 @@ const Users = () => {
 
                                 <Button
                                     variant="contained"
+                                    onClick={() => handleFilters('')}
                                     sx={{
                                         borderTopLeftRadius: 0,
                                         borderBottomLeftRadius: 0
@@ -431,7 +453,14 @@ const Users = () => {
                         rowCount={store.total}
                         paginationMode="server"
                         onPageChange={(newPage) => setPage(newPage)}
-                        sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
+                        getRowHeight={() => 'auto'}
+                        sx={{
+                            '& .MuiDataGrid-columnHeaders': { borderRadius: 0 },
+                            '& .MuiDataGrid-cell': {
+                                alignItems: 'start',
+                                py: 1,
+                            },
+                        }}
                         localeText={{
                             MuiTablePagination: {
                                 labelRowsPerPage: 'Filas por página:',

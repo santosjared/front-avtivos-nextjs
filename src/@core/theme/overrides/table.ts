@@ -1,5 +1,6 @@
 // ** MUI Imports
 import { Theme } from '@mui/material/styles'
+import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
 
 const Table = (theme: Theme) => {
   return {
@@ -19,7 +20,10 @@ const Table = (theme: Theme) => {
             fontWeight: 500,
             fontSize: '0.75rem',
             lineHeight: '1.959rem',
-            letterSpacing: '0.17px'
+            letterSpacing: '0.17px',
+            backgroundColor: hexToRGBA(theme.palette.secondary.light, 0.2),
+            paddingTop: theme.spacing(3),
+            paddingBottom: theme.spacing(3)
           }
         }
       }
@@ -44,9 +48,9 @@ const Table = (theme: Theme) => {
       styleOverrides: {
         root: {
           '& .MuiTableCell-head:not(.MuiTableCell-paddingCheckbox):first-child, & .MuiTableCell-root:not(.MuiTableCell-paddingCheckbox):first-child ':
-            {
-              paddingLeft: theme.spacing(5)
-            },
+          {
+            paddingLeft: theme.spacing(5)
+          },
           '& .MuiTableCell-head:last-child, & .MuiTableCell-root:last-child': {
             paddingRight: theme.spacing(5)
           }

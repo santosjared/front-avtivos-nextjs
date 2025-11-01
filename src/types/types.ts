@@ -1,5 +1,10 @@
 import { Rol } from "src/context/types"
 
+
+export type GradeType = {
+    name: string
+    _id: string
+}
 export type UserType = {
     name: string,
     lastName: string,
@@ -8,7 +13,7 @@ export type UserType = {
     ci: string,
     phone: string,
     address: string,
-    grade: string,
+    grade: GradeType,
     exp: string
     password: string,
     rol: Rol[]
