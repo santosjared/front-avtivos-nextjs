@@ -8,6 +8,7 @@ import { AppDispatch } from "src/store"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from '@hookform/resolvers/yup'
 import { instance } from "src/configs/axios"
+import { GradeType } from "src/types/types"
 
 interface LocationType {
     _id: string
@@ -17,17 +18,16 @@ interface LocationType {
 interface defaultValuesType {
     date: string
     time: string
-    user_rec: string
-    location: LocationType
+    grade: GradeType | null
+    name: string
+    lastName: string
+    location: LocationType | null
     description: string
     otherLocation: string
+    otherGrade: string
 
 }
 
-interface Props {
-    toggle: () => void
-    selectIds: string[]
-}
 
 const today = new Date().toISOString().split('T')[0]
 const now = new Date();
@@ -36,28 +36,98 @@ const currentTime = now.toTimeString().slice(0, 5);
 const defaultValues: defaultValuesType = {
     date: today,
     time: currentTime,
-    user_rec: '',
-    location: { _id: '', name: '' },
+    grade: null,
+    name: '',
+    lastName: '',
+    location: null,
     description: '',
-    otherLocation: ''
+    otherLocation: '',
+    otherGrade: ''
 }
 
+interface Props {
+    toggle: () => void
+    handleSave: (data: defaultValuesType) => void
+}
 
-
-const AddEntrega = ({ toggle, selectIds }: Props) => {
+const AddEntrega = ({ toggle, handleSave }: Props) => {
 
     const [location, setLocation] = useState<LocationType[]>([])
+    const [grades, setGrades] = useState<GradeType[]>([])
 
     const schema = yup.object().shape({
-        name: yup.string()
-            .required('El campo nombre es requerido')
-            .min(3, ''),
+        date: yup
+            .date()
+            .typeError('Por favor, ingrese una fecha válida')
+            .required('La fecha de entrega es obligatoria'),
+
+        time: yup
+            .string()
+            .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Ingrese una hora válida (HH:mm)')
+            .required('La hora de entrega es obligatoria'),
+
+        grade: yup
+            .object({
+                _id: yup.string().required(),
+                name: yup.string().required(),
+            })
+            .nullable()
+            .required('Debe seleccionar el grado del usuario que recibe'),
+
+        otherGrade: yup
+            .string()
+            .when('grade', {
+                is: (val: unknown) => (val as GradeType)?.name === 'Otro',
+                then: (schema) =>
+                    schema
+                        .required('Por favor, especifique el grado del usuario que recibe')
+                        .min(2, 'El grado debe tener al menos 2 caracteres')
+                        .max(50, 'El grado no debe exceder los 50 caracteres'),
+                otherwise: (schema) => schema.notRequired(),
+            }),
+
+        name: yup
+            .string()
+            .required('El nombre del usuario que recibe es obligatorio')
+            .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El nombre solo puede contener letras y espacios')
+            .min(2, 'El nombre debe tener al menos 2 caracteres')
+            .max(50, 'El nombre no debe superar los 50 caracteres'),
+
+        lastName: yup
+            .string()
+            .required('El apellido del usuario que recibe es obligatorio')
+            .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El apellido solo puede contener letras y espacios')
+            .min(2, 'El apellido debe tener al menos 2 caracteres')
+            .max(50, 'El apellido no debe superar los 50 caracteres'),
+
+        location: yup
+            .object({
+                _id: yup.string().required(),
+                name: yup.string().required(),
+            })
+            .nullable()
+            .required('Seleccione el lugar donde se entrega el activo'),
+
+        otherLocation: yup
+            .string()
+            .when('location', {
+                is: (val: unknown) => (val as LocationType)?.name === 'OTRO',
+                then: (schema) =>
+                    schema
+                        .required('Por favor, especifique la ubicación donde se entrega el activo')
+                        .min(3, 'La ubicación donde se entrega el activo debe tener al menos 3 caracteres')
+                        .max(50, 'La ubicación donde se entrega el activo no debe exceder los 50 caracteres'),
+                otherwise: (schema) => schema.notRequired(),
+            }),
+
         description: yup
             .string()
-            .transform(value => (value?.trim() === '' ? undefined : value))
-            .min(10, 'El campo descripción debe tener al menos 10 caracteres')
-            .notRequired()
+            .transform((value) => (value?.trim() === '' ? undefined : value))
+            .min(10, 'La descripción debe tener al menos 10 caracteres')
+            .max(1000, 'La descripción no debe superar los 1000 caracteres')
+            .notRequired(),
     })
+
 
     const theme = useTheme()
 
@@ -66,13 +136,24 @@ const AddEntrega = ({ toggle, selectIds }: Props) => {
             try {
                 const response = await instance.get('/activos/location')
                 const data = response.data
-                setLocation([...data, { name: 'otro', _id: 'otro' }])
+                setLocation([...data, { name: 'OTRO', _id: 'otro' }])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
         }
         fectLocation();
     }, [toggle])
+    useEffect(() => {
+        const fetch = async () => {
+            try {
+                const response = await instance.get('/users/grades')
+                setGrades([...response.data, { name: 'Otro', _id: 'Other' }])
+            } catch (error) {
+                console.log('error al solicitar grados', error)
+            }
+        }
+        fetch()
+    }, [defaultValues, toggle])
 
     const dispatch = useDispatch<AppDispatch>()
 
@@ -87,8 +168,10 @@ const AddEntrega = ({ toggle, selectIds }: Props) => {
         mode: 'onChange',
         resolver: yupResolver(schema)
     })
+    const otherGrade = watch('grade')
 
     const onSubmit = (data: defaultValuesType) => {
+        handleSave(data);
         toggle()
         reset()
     }
@@ -146,22 +229,94 @@ const AddEntrega = ({ toggle, selectIds }: Props) => {
                             </FormControl>
                         </Grid>
                         <Grid item xs={6}>
-                            <FormControl fullWidth sx={{ mb: 3 }}>
+                            <FormControl fullWidth sx={{ mb: 6 }}>
+                                <InputLabel id="grade-select">Grado</InputLabel>
                                 <Controller
-                                    name="user_rec"
+                                    name="grade"
                                     control={control}
-                                    rules={{ required: 'Este campo es obligatorio' }}
+                                    render={({ field: { value, onChange } }) => (
+                                        <Select
+                                            labelId="grade-select"
+                                            id="select-grade"
+                                            label="Grado"
+                                            error={Boolean(errors.grade)}
+                                            value={value?._id ?? ''}
+                                            onChange={(e) => {
+                                                const selectedId = e.target.value as string
+                                                const selectedGrade = grades.find((grade) => grade._id === selectedId) || null
+                                                onChange(selectedGrade)
+                                            }}
+                                        >
+                                            {grades.map((value) => (<MenuItem
+                                                value={value._id || ''}
+                                                key={value._id}
+                                            >{value.name}</MenuItem>))}
+                                        </Select>
+                                    )}
+                                />{!errors.grade && <FormHelperText sx={{ color: 'secondary.main' }}>Grado del usuario que recibe</FormHelperText>}
+                                {errors.grade && <FormHelperText sx={{ color: 'error.main' }}>{errors.grade?.message || errors.grade.name?.message || errors.grade._id?.message}</FormHelperText>}
+                            </FormControl>
+                        </Grid>
+                        {otherGrade?.name == 'Otro' &&
+                            <Grid item xs={6}>
+                                <FormControl fullWidth sx={{ mb: 3 }}>
+                                    <Controller
+                                        name="otherGrade"
+                                        control={control}
+                                        rules={{ required: true }}
+                                        render={({ field: { value, onChange } }) => (
+                                            <TextField
+                                                label='Especifica otro grado'
+                                                onChange={(e) => onChange(e.target.value.toUpperCase())}
+                                                error={Boolean(errors.otherGrade)}
+                                                value={value}
+                                            />
+                                        )}
+                                    />
+                                    {!errors.otherGrade && <FormHelperText sx={{ color: 'secondary.main' }}>Especifica el grado del usuario que recibe</FormHelperText>}
+                                    {errors.otherGrade && <FormHelperText sx={{ color: 'error.main' }}>{errors.otherGrade.message}</FormHelperText>}
+                                </FormControl>
+                            </Grid>
+                        }
+                        <Grid item xs={6}>
+                            <FormControl fullWidth sx={{ mb: 6 }}>
+                                <Controller
+                                    name="name"
+                                    control={control}
+                                    rules={{ required: true }}
                                     render={({ field: { value, onChange } }) => (
                                         <TextField
-                                            label='Usuario que recibe'
-                                            placeholder="Sof. Sup. Jhon Doh"
+                                            label='Nombres'
+                                            placeholder='Juan Carlos'
                                             onChange={onChange}
-                                            error={Boolean(errors.user_rec)}
+                                            error={Boolean(errors.name)}
+                                            value={value}
+
+                                        />
+                                    )}
+                                />
+                                {!errors.name && <FormHelperText sx={{ color: 'secondary.main' }}>Nombre del usuario que recibe</FormHelperText>}
+                                {errors.name && <FormHelperText sx={{ color: 'error.main' }}>{errors.name.message}</FormHelperText>}
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={6}>
+                            <FormControl fullWidth sx={{ mb: 6 }}>
+                                <Controller
+                                    name="lastName"
+                                    control={control}
+                                    rules={{ required: true }}
+                                    render={({ field: { value, onChange } }) => (
+                                        <TextField
+                                            label='Apellidos'
+                                            placeholder='Benitez Lopez'
+                                            onChange={onChange}
+                                            error={Boolean(errors.lastName)}
                                             value={value}
                                         />
                                     )}
                                 />
-                                {errors.user_rec && <FormHelperText sx={{ color: 'error.main' }}>{errors.user_rec.message}</FormHelperText>}
+                                {!errors.lastName && <FormHelperText sx={{ color: 'secondary.main' }}>Apellido del usuario que recibe</FormHelperText>}
+                                {errors.lastName && <FormHelperText sx={{ color: 'error.main' }}>{errors.lastName.message}</FormHelperText>}
                             </FormControl>
                         </Grid>
                         <Grid item xs={6}>
@@ -189,10 +344,11 @@ const AddEntrega = ({ toggle, selectIds }: Props) => {
                                         </Select>
                                     )}
                                 />
+                                {!errors.location && <FormHelperText sx={{ color: 'secondary.main' }}>Lugar donde presta el activo</FormHelperText>}
                                 {errors.location && <FormHelperText sx={{ color: 'error.main' }}>{errors.location?.message || errors.location.name?.message || errors.location._id?.message}</FormHelperText>}
                             </FormControl>
                         </Grid>
-                        {otherLocation?.name == 'otro' &&
+                        {otherLocation?.name == 'OTRO' &&
                             <Grid item xs={6}>
                                 <FormControl fullWidth sx={{ mb: 3 }}>
                                     <Controller
@@ -208,6 +364,7 @@ const AddEntrega = ({ toggle, selectIds }: Props) => {
                                             />
                                         )}
                                     />
+                                    {!errors.otherLocation && <FormHelperText sx={{ color: 'secondary.main' }}>Especifica el lugar donde presta el activo</FormHelperText>}
                                     {errors.otherLocation && <FormHelperText sx={{ color: 'error.main' }}>{errors.otherLocation.message}</FormHelperText>}
                                 </FormControl>
                             </Grid>
@@ -248,9 +405,9 @@ const AddEntrega = ({ toggle, selectIds }: Props) => {
                             type='submit'
                             variant='contained'
                             sx={{ mr: 3 }}
-                            startIcon={<Icon icon='mdi:content-save' />}
+                            startIcon={<Icon icon='mdi:navigate-next' />}
                         >
-                            Guardar
+                            Siguiente
                         </Button>
                     </Box>
                 </fieldset>

@@ -5,10 +5,11 @@ import { useDispatch } from 'react-redux'
 import Icon from 'src/@core/components/icon'
 import { RootState, AppDispatch } from 'src/store'
 import { useSelector } from 'react-redux'
-import { UserType } from 'src/types/types'
+import { GradeType, UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
-import { useRouter } from 'next/router'
 import { fetchData } from 'src/store/entrega'
+import Entrega from 'src/views/pages/borrowing/Entrega'
+import Confirmed from 'src/views/pages/borrowing/Confirmed'
 
 interface LocationType {
     _id: string
@@ -21,6 +22,60 @@ interface EntregaType {
     user_en: UserType
     user_rec: string
     location: LocationType
+}
+
+
+interface RegisterType {
+    date: string
+    time: string
+    grade: GradeType | null
+    name: string
+    lastName: string
+    location: LocationType | null
+    description: string
+    otherLocation: string
+    otherGrade: string
+
+}
+
+interface SubCategoryType {
+    _id?: string
+    name: string
+    util: number
+}
+
+interface ContableType {
+    _id: string
+    name: string,
+    util: number,
+    subcategory: SubCategoryType[]
+    description?: string
+}
+
+interface StatusType {
+    _id: string
+    name: string
+}
+
+interface ResponsableType {
+    _id: string
+    grade: GradeType
+    name: string
+    lastName: string
+}
+
+interface ActivosType {
+    _id?: string
+    code: string,
+    responsable: ResponsableType | null,
+    name: string,
+    location: LocationType | null,
+    price_a: number,
+    date_a: string,
+    imageUrl: string | null,
+    status: StatusType | null
+    category: ContableType | null
+    subcategory: SubCategoryType | null
 }
 
 interface CellType {
@@ -57,7 +112,7 @@ const columns = [
         headerName: 'Usuario que entrega',
         renderCell: ({ row }: CellType) => {
             return (
-                <Typography variant='body2'>{row.user_en?.grade || ''} {row.user_en?.name || ''} {row.user_en?.lastName || ''}</Typography>
+                <Typography variant='body2'>{row.user_en?.grade.name || ''} {row.user_en?.name || ''} {row.user_en?.lastName || ''}</Typography>
             )
         }
     },
@@ -138,8 +193,9 @@ const Borrowing = () => {
     const [pageSize, setPageSize] = useState<number>(10)
     const [page, setPage] = useState<number>(0)
     const [field, setField] = useState<string>('')
-
-    const router = useRouter()
+    const [step, setStep] = useState<'borrowing' | 'add' | 'confirmed'>('borrowing')
+    const [register, setRegister] = useState<RegisterType | null>(null)
+    const [activos, setActivos] = useState<ActivosType[]>([])
 
     const dispatch = useDispatch<AppDispatch>()
 
@@ -151,102 +207,110 @@ const Borrowing = () => {
     const handleFilters = () => {
         dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
     }
-    return (
-        <Grid container spacing={6}>
-            <Grid item xs={12}>
-                <Card>
-                    <Box sx={{ p: 5, pb: 0 }}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: { xs: 'column', sm: 'row' },
-                                alignItems: { xs: 'stretch', sm: 'center' },
-                                flexWrap: 'nowrap',
-                                gap: 10,
-                                width: '100%',
-                            }}
-                        >
-                            <Box sx={{ display: 'flex', flex: 1 }}>
-                                <TextField
-                                    fullWidth
-                                    label="Buscar"
-                                    variant="outlined"
-                                    name="search"
-                                    autoComplete="off"
-                                    value={field}
-                                    onChange={(e) => setField(e.target.value)}
-                                    sx={{
-                                        flex: 1,
-                                        '& .MuiInputBase-root': {
-                                            borderTopRightRadius: 0,
-                                            borderBottomRightRadius: 0,
-                                        }
-                                    }}
-                                />
+    const StepBorrowing = () => {
+        return (
+            <Grid container spacing={6}>
+                <Grid item xs={12}>
+                    <Card>
+                        <Box sx={{ p: 5, pb: 0 }}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: { xs: 'column', sm: 'row' },
+                                    alignItems: { xs: 'stretch', sm: 'center' },
+                                    flexWrap: 'nowrap',
+                                    gap: 10,
+                                    width: '100%',
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', flex: 1 }}>
+                                    <TextField
+                                        fullWidth
+                                        label="Buscar"
+                                        variant="outlined"
+                                        name="search"
+                                        autoComplete="off"
+                                        value={field}
+                                        onChange={(e) => setField(e.target.value)}
+                                        sx={{
+                                            flex: 1,
+                                            '& .MuiInputBase-root': {
+                                                borderTopRightRadius: 0,
+                                                borderBottomRightRadius: 0,
+                                            }
+                                        }}
+                                    />
 
-                                <Button
-                                    variant="outlined"
-                                    onClick={handleFilters}
-                                    startIcon={<Icon icon='mdi:search' />}
-                                    sx={{
-                                        borderRadius: 0,
-                                        borderLeft: 1
-                                    }}
-                                >
-                                    Buscar
-                                </Button>
+                                    <Button
+                                        variant="outlined"
+                                        onClick={handleFilters}
+                                        startIcon={<Icon icon='mdi:search' />}
+                                        sx={{
+                                            borderRadius: 0,
+                                            borderLeft: 1
+                                        }}
+                                    >
+                                        Buscar
+                                    </Button>
 
+                                    <Button
+                                        variant="contained"
+                                        sx={{
+                                            borderTopLeftRadius: 0,
+                                            borderBottomLeftRadius: 0
+                                        }}
+                                    >
+                                        Todos
+                                    </Button>
+                                </Box>
                                 <Button
+                                    onClick={() => setStep('add')}
                                     variant="contained"
-                                    sx={{
-                                        borderTopLeftRadius: 0,
-                                        borderBottomLeftRadius: 0
-                                    }}
+                                    color='success'
+                                    startIcon={<Icon icon='mdi:add' />}
+                                    sx={{ p: 3.5 }}
                                 >
-                                    Todos
+                                    Nuevo entrega
                                 </Button>
                             </Box>
-                            <Button
-                                onClick={() => router.replace('entrega')}
-                                variant="contained"
-                                color='success'
-                                startIcon={<Icon icon='mdi:add' />}
-                                sx={{ p: 3.5 }}
-                            >
-                                Nuevo entrega
-                            </Button>
                         </Box>
-                    </Box>
-                    <Box sx={{ p: 5 }}>
-                        <Typography variant='subtitle2'>
-                            Lista de entregados
-                        </Typography>
-                    </Box>
-                    <DataGrid
-                        autoHeight
-                        rows={store.data}
-                        columns={columns}
-                        getRowId={(row: any) => row._id}
-                        pagination
-                        pageSize={pageSize}
-                        disableSelectionOnClick
-                        onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                        rowsPerPageOptions={[10, 25, 50]}
-                        rowCount={store.total}
-                        paginationMode="server"
-                        onPageChange={(newPage) => setPage(newPage)}
-                        sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
-                        localeText={{
-                            MuiTablePagination: {
-                                labelRowsPerPage: 'Filas por página:',
-                            },
-                        }
-                        }
-                    />
-                </Card>
+                        <Box sx={{ p: 5 }}>
+                            <Typography variant='subtitle2'>
+                                Lista de entregados
+                            </Typography>
+                        </Box>
+                        <DataGrid
+                            autoHeight
+                            rows={store.data}
+                            columns={columns}
+                            getRowId={(row: any) => row._id}
+                            pagination
+                            pageSize={pageSize}
+                            disableSelectionOnClick
+                            onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                            rowsPerPageOptions={[10, 25, 50]}
+                            rowCount={store.total}
+                            paginationMode="server"
+                            onPageChange={(newPage) => setPage(newPage)}
+                            sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
+                            localeText={{
+                                MuiTablePagination: {
+                                    labelRowsPerPage: 'Filas por página:',
+                                },
+                            }
+                            }
+                        />
+                    </Card>
+                </Grid>
             </Grid>
-        </Grid>
-    )
+        )
+    }
+    switch (step) {
+        case 'borrowing': return (<StepBorrowing />)
+        case 'add': return (<Entrega setStep={setStep} setActivos={setActivos} setRegister={setRegister} />)
+        case 'confirmed': return (<Confirmed setStep={setStep} setActivos={setActivos} activos={activos} register={register} page={page} limit={pageSize} />)
+        default: return (<StepBorrowing />)
+    }
 }
 Borrowing.acl = {
     action: 'read',

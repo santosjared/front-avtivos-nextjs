@@ -6,10 +6,10 @@ import AddDraw from "src/components/draw";
 import { AppDispatch, RootState } from "src/store";
 import Swal from 'sweetalert2'
 import { instance } from "src/configs/axios";
-import AddConatble from "./register";
 import { deleteContable, fetchData } from "src/store/contable";
 import { DataGrid } from "@mui/x-data-grid";
-import SubCategory from "./subcategory";
+import AddConatble from "src/views/pages/contable/Register";
+import SubCategory from "src/views/pages/contable/SubCategory";
 
 interface SubCategoryType {
     _id?: string

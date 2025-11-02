@@ -6,10 +6,10 @@ import Icon from 'src/@core/components/icon';
 import AddDraw from 'src/components/draw';
 import { AppDispatch, RootState } from 'src/store';
 import { deleteRol, fetchData } from 'src/store/role';
-import AddRol from './register';
 import Swal from 'sweetalert2';
-import Permissions from './permissions';
 import { Rol } from 'src/context/types';
+import AddRol from 'src/views/pages/roles/Register';
+import Permissions from 'src/views/pages/roles/Permissions';
 
 interface CellType {
     row: Rol

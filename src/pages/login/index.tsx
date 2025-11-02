@@ -18,7 +18,6 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { Controller, useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { useAuth } from 'src/hooks/useAuth'
-import themeConfig from 'src/configs/themeConfig'
 import BlankLayout from 'src/@core/layouts/BlankLayout'
 import { useDispatch } from 'react-redux'
 import { AppDispatch } from 'src/store'
@@ -91,19 +90,6 @@ const LoginPage = () => {
     resolver: yupResolver(schema)
   })
 
-  // const onSubmit = (data: FormData) => {
-  //   const { email, password } = data;
-  //   dispatch(login({
-  //     params: { email, password, rememberMe },
-  //     errorCallback: () => {
-  //       setError('email', {
-  //         type: 'manual',
-  //         message: 'Correo electrónico o Contraseña es incorrecto'
-  //       });
-  //     }
-  //   }));
-  // };
-
   const onSubmit = (data: FormData) => {
     const { email, password } = data
     login({ email, password, rememberMe }, () => {
@@ -132,7 +118,6 @@ const LoginPage = () => {
           sx={{
             fontSize: { xs: '1.2rem', sm: '2.4rem' },
             lineHeight: 1.5,
-            whiteSpace: 'pre-line',
           }}
         >
           BIENVENIDOS A DIRECCION DEPARTAMENTAL DE BOMBEROS "CARACOLES POTOSI"
@@ -143,7 +128,7 @@ const LoginPage = () => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        height: { xs: 'calc(100vh - 100px)', md: 'calc(100vh - 150px)' },
+        minHeight: { xs: 'calc(100vh - 150px)', md: 'calc(100vh - 200px)' },
         px: 2,
       }}>
         <Wrapper sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, boxShadow: 12, mb: 3 }}>
@@ -257,7 +242,6 @@ const LoginPage = () => {
           </Box>
         </Wrapper>
       </Box>
-      {/* <Footer /> */}
     </Box>
 
   )

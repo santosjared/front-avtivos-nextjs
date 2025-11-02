@@ -10,9 +10,9 @@ import { RootState, AppDispatch } from 'src/store'
 import { dowUser, fetchData, upUser } from 'src/store/user'
 import { useSelector } from 'react-redux'
 import CustomChip from 'src/@core/components/mui/chip'
-import AddUser from './register'
 import { UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
+import AddUser from 'src/views/pages/users/Register'
 
 interface UserRoleType {
     [key: string]: { icon: string; color: string }

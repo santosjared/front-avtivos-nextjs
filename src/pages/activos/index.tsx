@@ -5,12 +5,12 @@ import { useDispatch, useSelector } from "react-redux";
 import Icon from 'src/@core/components/icon';
 import AddDraw from "src/components/draw";
 import { AppDispatch, RootState } from "src/store";
-import AddActivos from "./register";
 import { deleteActivos, fetchData } from "src/store/activos";
 import baseUrl from 'src/configs/environment'
 import Swal from 'sweetalert2'
 import CustomChip from 'src/@core/components/mui/chip'
 import { instance } from "src/configs/axios";
+import AddActivos from "src/views/pages/activos/Register";
 
 interface SubCategoryType {
     _id?: string
@@ -130,7 +130,7 @@ const Activos = () => {
     }, [])
 
     useEffect(() => {
-        const fectStatus = async () => {
+        const fectSubCategory = async () => {
             try {
                 const response = await instance.get('/contables/subcategories')
                 const data = response.data
@@ -139,7 +139,7 @@ const Activos = () => {
                 console.error('error al extraer la sub categoria', error)
             }
         }
-        fectStatus();
+        fectSubCategory();
     }, [])
 
     useEffect(() => {

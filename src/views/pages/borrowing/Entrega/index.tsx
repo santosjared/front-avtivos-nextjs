@@ -1,4 +1,4 @@
-import { Box, Button, Card, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material"
+import { Box, Button, Card, Divider, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Tooltip, Typography } from "@mui/material"
 import { DataGrid } from "@mui/x-data-grid"
 import { useEffect, useState } from "react"
 import Icon from 'src/@core/components/icon';
@@ -6,12 +6,20 @@ import AddDraw from "src/components/draw";
 import baseUrl from 'src/configs/environment'
 import CustomChip from 'src/@core/components/mui/chip'
 import { instance } from "src/configs/axios";
-import AddEntrega from "./register";
+import AddEntrega from "./Register";
 
-
-interface CategoryType {
-    _id: string
+interface SubCategoryType {
+    _id?: string
     name: string
+    util: number
+}
+
+interface ContableType {
+    _id: string
+    name: string,
+    util: number,
+    subcategory: SubCategoryType[]
+    description?: string
 }
 
 interface StatusType {
@@ -24,31 +32,48 @@ interface LocationType {
     name: string
 }
 
+interface GradeType {
+    name: string
+    _id: string
+}
+
 interface ResponsableType {
     _id: string
-    grade: string
+    grade: GradeType
     name: string
     lastName: string
 }
 
 interface ActivosType {
-    _id: string
+    _id?: string
     code: string,
     responsable: ResponsableType | null,
     name: string,
-    location: LocationType,
+    location: LocationType | null,
     price_a: number,
     date_a: string,
-    date_e: string,
-    cantidad: number,
-    image: File | null,
     imageUrl: string | null,
-    status: StatusType
-    otherStatus: string,
-    category: CategoryType
-    otherCategory: string
-    otherLocation: string
+    status: StatusType | null
+    category: ContableType | null
+    subcategory: SubCategoryType | null
+}
+
+interface RegisterType {
+    date: string
+    time: string
+    grade: GradeType | null
+    name: string
+    lastName: string
+    location: LocationType | null
     description: string
+    otherLocation: string
+    otherGrade: string
+
+}
+
+
+interface CellType {
+    row: ActivosType
 }
 
 interface DataType {
@@ -63,147 +88,109 @@ interface CellType {
 
 const columns = [
     {
-        flex: 0.2,
-        minWidth: 150,
-        field: 'code',
-        sortable: false,
-        headerName: 'Codigo',
+        field: 'code', headerName: 'Código', minWidth: 100, flex: 0.1,
+        renderCell: ({ row }: CellType) => (
+            <Tooltip title={row.code}><Typography variant="body2" noWrap>{row.code}</Typography></Tooltip>
+        )
+    },
+    {
+        field: 'name', headerName: 'Nombre del activo', minWidth: 160, flex: 0.16,
+        renderCell: ({ row }: CellType) => (
+            <Tooltip title={row.name}><Typography variant="body2" noWrap>{row.name}</Typography></Tooltip>
+        )
+    },
+    {
+        field: 'location', headerName: 'Ubicación', minWidth: 160, flex: 0.16,
+        renderCell: ({ row }: CellType) => (
+            <Tooltip title={row.location?.name}><Typography variant="body2" noWrap>{row.location?.name}</Typography></Tooltip>
+        )
+    },
+    {
+        field: 'price_a', headerName: 'Precio de Adquisición', minWidth: 120, flex: 0.12,
+        renderCell: ({ row }: CellType) => <Typography variant="body2" noWrap>{row.price_a}</Typography>
+    },
+    {
+        field: 'date_a', headerName: 'Fecha de Adquisición', minWidth: 130, flex: 0.13,
         renderCell: ({ row }: CellType) => {
+            const date = new Date(row.date_a)
+            const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+            return <Typography variant="body2" noWrap>{formatted}</Typography>
+        }
+    },
+    {
+        field: 'photo', headerName: 'Foto', minWidth: 80, flex: 0.08,
+        renderCell: ({ row }: CellType) => (
+            <Box sx={{ width: 40, height: 40 }}>
+                <img
+                    src={`${baseUrl().backendURI}/images/${row.imageUrl}`}
+                    alt='Activo'
+                    style={{ width: 40, height: 40, borderRadius: 3 }}
+                />
+            </Box>
+        )
+    },
+    {
+        field: 'category', headerName: 'Categoría', minWidth: 140, flex: 0.14,
+        renderCell: ({ row }: CellType) => <Typography variant="body2" noWrap>{row.category?.name}</Typography>
+    },
+    {
+        field: 'subcategory', headerName: 'Sub Categoría', minWidth: 140, flex: 0.14,
+        renderCell: ({ row }: CellType) => <Typography variant="body2" noWrap>{row.subcategory?.name}</Typography>
+    },
+    {
+        field: 'responsable', headerName: 'Responsable', minWidth: 190, flex: 0.19,
+        renderCell: ({ row }: CellType) => {
+            const text = `${row.responsable?.grade?.name || ''} ${row.responsable?.name || ''} ${row.responsable?.lastName || ''}`
             return (
-                <Typography variant='body2' noWrap>{row.code}</Typography>
+                <Tooltip title={text}>
+                    <Typography variant="body2" noWrap>{text}</Typography>
+                </Tooltip>
             )
         }
     },
     {
-        flex: 0.2,
-        minWidth: 120,
-        field: 'name',
-        sortable: false,
-        headerName: 'Nombre',
-        renderCell: ({ row }: CellType) => {
-            return (
-                <Typography variant='body2' noWrap>{row.name}</Typography>
-            )
-        }
-    },
-    {
-        flex: 0.2,
-        minWidth: 120,
-        field: 'location',
-        headerName: 'Ubicacion',
-        renderCell: ({ row }: CellType) => {
-            return (
-                <Typography variant='body2' noWrap>{row.location?.name}</Typography>
-            )
-        }
-    },
-    {
-        flex: 0.2,
-        minWidth: 50,
-        field: 'price_a',
-        headerName: 'Precio de Adquicion',
-        renderCell: ({ row }: CellType) => {
-            return (
-                <Typography variant='body2' noWrap>{row.price_a}</Typography>
-            )
-        }
-    },
-    {
-        flex: 0.2,
-        minWidth: 90,
-        field: 'date_a',
-        headerName: 'Fecha de Adquicion',
-        renderCell: ({ row }: CellType) => {
-            const date = new Date(row.date_e)
-            const form = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-            return (
-                <Typography variant='body2' noWrap>{form}</Typography>
-            )
-        }
-    },
-    {
-        flex: 0.2,
-        minWidth: 90,
-        field: 'date_e',
-        headerName: 'Fecha de expiracion',
-        renderCell: ({ row }: CellType) => {
-            const date = new Date(row.date_e)
-            const form = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-            return (
-                <Typography variant='body2' noWrap>{form}</Typography>
-            )
-        }
-    },
-    {
-        flex: 0.2,
-        minWidth: 90,
-        field: 'photo',
-        headerName: 'Foto',
-        renderCell: ({ row }: CellType) => {
-            return (
-                <Box sx={{ width: 40, height: 40, borderRadius: '3px' }}>
-                    <img
-                        src={`${baseUrl().backendURI}/images/${row.imageUrl}`}
-                        style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: '3px'
-                        }}
-                        alt="im"
-                    />
-                </Box>
-            )
-        }
-    },
-    {
-        flex: 0.2,
-        minWidth: 90,
-        field: 'category',
-        headerName: 'Categoria',
-        renderCell: ({ row }: CellType) => {
-            return (
-                <Typography variant='body2' noWrap>{row.category?.name}</Typography>
-            )
-        }
-    },
-    {
-        flex: 0.2,
-        minWidth: 190,
-        field: 'responsable',
-        headerName: 'Responsable',
-        renderCell: ({ row }: CellType) => {
-            return (
-                <Typography variant='body2' noWrap>{row.responsable?.grade} {row.responsable?.name} {row.responsable?.lastName}</Typography>
-            )
-        }
-    },
-    {
-        flex: 0.2,
-        minWidth: 90,
         field: 'status',
         headerName: 'Estado',
+        minWidth: 90,
+        flex: 0.09,
         renderCell: ({ row }: CellType) => (
-            <CustomChip
-                skin='light'
-                size='small'
-                label={row.status?.name}
-                color={row.status?.name === 'Bueno' ? 'success' : row.status?.name === 'Regular' ? 'warning' : row.status?.name === 'Malo' ? 'error' : 'info'}
-                sx={{ textTransform: 'capitalize' }}
-            />
+            <Tooltip title={row.status?.name || ''} arrow>
+                <span>
+                    <CustomChip
+                        skin='light'
+                        size='small'
+                        label={row.status?.name}
+                        rounded
+                        color={
+                            row.status?.name === 'Bueno' ? 'success' :
+                                row.status?.name === 'Regular' ? 'warning' :
+                                    row.status?.name === 'Malo' ? 'error' : 'info'
+                        }
+                    />
+                </span>
+            </Tooltip>
         )
     },
 ]
 
-const Activos = () => {
+interface Props {
+    setStep: (step: 'borrowing' | 'add' | 'confirmed') => void
+    setRegister: (data: RegisterType) => void
+    setActivos: (data: ActivosType[]) => void
+}
+
+const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
 
     const [field, setField] = useState('');
     const [pageSize, setPageSize] = useState(10);
     const [page, setPage] = useState(0);
     const [drawOpen, setDrawOpen] = useState<boolean>(false)
-    const [category, setCategory] = useState<CategoryType[]>([])
+    const [category, setCategory] = useState<ContableType[]>([])
     const [status, setStatus] = useState<StatusType[]>([])
     const [selectedCategory, setSelectedCategory] = useState('');
+    const [selectedSubCategory, setSelectedSubcategory] = useState<string>('')
     const [selectedStatus, setSelectedStatus] = useState('');
+    const [subcategory, setSubCategory] = useState<SubCategoryType[]>([])
     const [data, setData] = useState<DataType>({ data: [], total: 0 });
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -212,15 +199,15 @@ const Activos = () => {
     useEffect(() => {
         const fectCategory = async () => {
             try {
-                const response = await instance.get('/activos/category')
+                const response = await instance.get('/contables')
                 const data = response.data
-                setCategory(data)
+                setCategory(data || [])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
         }
         fectCategory();
-    }, [open])
+    }, [])
 
     useEffect(() => {
         const fectStatus = async () => {
@@ -233,7 +220,20 @@ const Activos = () => {
             }
         }
         fectStatus();
-    }, [open])
+    }, [])
+
+    useEffect(() => {
+        const fectSubCategory = async () => {
+            try {
+                const response = await instance.get('/contables/subcategories')
+                const data = response.data
+                setSubCategory(data || [])
+            } catch (error) {
+                console.error('error al extraer la sub categoria', error)
+            }
+        }
+        fectSubCategory();
+    }, [])
 
     useEffect(() => {
         const fetchActivosAbailable = async () => {
@@ -267,10 +267,31 @@ const Activos = () => {
         }
     }
 
+    const handleSave = (entrega: RegisterType) => {
+        const selectedActivos = data.data.filter(row => selectedIds.includes(row._id || ''))
+        setRegister(entrega)
+        setActivos(selectedActivos)
+        setStep('confirmed')
+    }
+
+
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>
                 <Card>
+                    <Box sx={{ display: "flex", justifyContent: 'space-between', p: 5, pb: 2 }}>
+                        <Button variant="outlined" color="secondary" onClick={() => setStep('borrowing')} startIcon={<Icon icon='ic:baseline-arrow-back-ios' />}>Atras</Button>
+                        <Button
+                            onClick={toggleDrawer}
+                            variant="contained"
+                            sx={{ p: 3.5 }}
+                            disabled={selectedIds.length <= 0}
+                            color="info"
+                        >
+                            Realizar entrega
+                        </Button>
+                    </Box>
+                    <Divider />
                     <Box sx={{ p: 5, pb: 0 }}>
                         <Box
                             sx={{
@@ -283,11 +304,12 @@ const Activos = () => {
                             }}
                         >
                             <FormControl>
-                                <InputLabel id="category-select">Categoria</InputLabel>
+                                <InputLabel id="category-select">Categoría</InputLabel>
                                 <Select
                                     labelId="category-select"
                                     id="select-category"
-                                    label="Categoria"
+                                    label="Categoría"
+                                    disabled={category.length === 0}
                                     value={selectedCategory}
                                     onChange={(e) => {
                                         const selected = e.target.value
@@ -296,6 +318,25 @@ const Activos = () => {
                                     }}
                                 >
                                     {category.map((cat, index) => (
+                                        <MenuItem value={cat.name} key={index}>{cat.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <FormControl>
+                                <InputLabel id="subcategory-select">Sub Categoría</InputLabel>
+                                <Select
+                                    labelId="subcategory-select"
+                                    id="select-subcategory"
+                                    label="Sub Categoría"
+                                    disabled={subcategory.length === 0}
+                                    value={selectedSubCategory}
+                                    onChange={(e) => {
+                                        const selected = e.target.value
+                                        setSelectedSubcategory(selected)
+                                        handleFilters(selected)
+                                    }}
+                                >
+                                    {subcategory.map((cat, index) => (
                                         <MenuItem value={cat.name} key={index}>{cat.name}</MenuItem>
                                     ))}
                                 </Select>
@@ -319,7 +360,6 @@ const Activos = () => {
                                     ))}
                                 </Select>
                             </FormControl>
-
                             <Box sx={{ display: 'flex', flex: 1 }}>
                                 <TextField
                                     fullWidth
@@ -361,15 +401,6 @@ const Activos = () => {
                                     Todos
                                 </Button>
                             </Box>
-                            <Button
-                                onClick={toggleDrawer}
-                                variant="contained"
-                                sx={{ p: 3.5 }}
-                                disabled={selectedIds.length <= 0}
-                                color="info"
-                            >
-                                Realizar entrega
-                            </Button>
                         </Box>
                     </Box>
                     <Box sx={{ display: 'flex', p: 5, justifyContent: 'space-between' }}>
@@ -405,17 +436,10 @@ const Activos = () => {
                 </Card>
             </Grid>
             <AddDraw open={drawOpen} toggle={toggleDrawer} title={'Registro del entrega'}>
-                <AddEntrega toggle={toggleDrawer} selectIds={selectedIds} />
+                <AddEntrega toggle={toggleDrawer} handleSave={handleSave} />
             </AddDraw>
         </Grid>
     )
 }
 
-Activos.acl = {
-    action: 'read',
-    subject: 'activos'
-}
-
-Activos.authGuard = true;
-
-export default Activos
+export default Entrega
