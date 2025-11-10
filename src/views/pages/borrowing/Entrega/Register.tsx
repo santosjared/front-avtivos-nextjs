@@ -4,11 +4,13 @@ import { useEffect, useState } from "react"
 import Icon from 'src/@core/components/icon'
 import * as yup from 'yup'
 import { useDispatch } from 'react-redux'
-import { AppDispatch } from "src/store"
+import { AppDispatch, RootState } from "src/store"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from '@hookform/resolvers/yup'
 import { instance } from "src/configs/axios"
 import { GradeType } from "src/types/types"
+import { useSelector } from "react-redux"
+import { initialState, resetBorrowingRegister, setData, } from "src/store/borrowing/register"
 
 interface LocationType {
     _id: string
@@ -25,116 +27,106 @@ interface defaultValuesType {
     description: string
     otherLocation: string
     otherGrade: string
-
-}
-
-
-const today = new Date().toISOString().split('T')[0]
-const now = new Date();
-const currentTime = now.toTimeString().slice(0, 5);
-
-const defaultValues: defaultValuesType = {
-    date: today,
-    time: currentTime,
-    grade: null,
-    name: '',
-    lastName: '',
-    location: null,
-    description: '',
-    otherLocation: '',
-    otherGrade: ''
 }
 
 interface Props {
     toggle: () => void
     handleSave: (data: defaultValuesType) => void
+    mode: 'create' | 'edit'
 }
 
-const AddEntrega = ({ toggle, handleSave }: Props) => {
+const schema = yup.object().shape({
+    date: yup
+        .date()
+        .typeError('Por favor, ingrese una fecha válida')
+        .required('La fecha de entrega es obligatoria'),
+
+    time: yup
+        .string()
+        .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Ingrese una hora válida (HH:mm)')
+        .required('La hora de entrega es obligatoria'),
+
+    grade: yup
+        .object({
+            _id: yup.string().required(),
+            name: yup.string().required(),
+        })
+        .nullable()
+        .required('Debe seleccionar el grado del usuario que recibe'),
+
+    otherGrade: yup
+        .string()
+        .trim()
+        .when('grade', {
+            is: (val: unknown) => (val as GradeType)?.name === 'Otro',
+            then: (schema) =>
+                schema
+                    .required('Por favor, especifique el grado del usuario que recibe')
+                    .min(2, 'El grado debe tener al menos 2 caracteres')
+                    .max(50, 'El grado no debe exceder los 50 caracteres'),
+            otherwise: (schema) => schema.notRequired(),
+        }),
+
+    name: yup
+        .string()
+        .trim()
+        .required('El nombre del usuario que recibe es obligatorio')
+        .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El nombre solo puede contener letras y espacios')
+        .min(2, 'El nombre debe tener al menos 2 caracteres')
+        .max(50, 'El nombre no debe superar los 50 caracteres'),
+
+    lastName: yup
+        .string()
+        .trim()
+        .required('El apellido del usuario que recibe es obligatorio')
+        .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El apellido solo puede contener letras y espacios')
+        .min(2, 'El apellido debe tener al menos 2 caracteres')
+        .max(50, 'El apellido no debe superar los 50 caracteres'),
+
+    location: yup
+        .object({
+            _id: yup.string().required(),
+            name: yup.string().required(),
+        })
+        .nullable()
+        .required('Seleccione el lugar donde se entrega el activo'),
+
+    otherLocation: yup
+        .string()
+        .trim()
+        .when('location', {
+            is: (val: unknown) => (val as LocationType)?.name === 'OTRO',
+            then: (schema) =>
+                schema
+                    .required('Por favor, especifique la ubicación donde se entrega el activo')
+                    .min(3, 'La ubicación donde se entrega el activo debe tener al menos 3 caracteres')
+                    .max(50, 'La ubicación donde se entrega el activo no debe exceder los 50 caracteres'),
+            otherwise: (schema) => schema.notRequired(),
+        }),
+
+    description: yup
+        .string()
+        .trim()
+        .transform((value) => (value?.trim() === '' ? undefined : value))
+        .min(10, 'La descripción debe tener al menos 10 caracteres')
+        .max(1000, 'La descripción no debe superar los 1000 caracteres')
+        .notRequired(),
+})
+
+
+const AddBorrowing = ({ toggle, handleSave, mode = 'create' }: Props) => {
 
     const [location, setLocation] = useState<LocationType[]>([])
     const [grades, setGrades] = useState<GradeType[]>([])
 
-    const schema = yup.object().shape({
-        date: yup
-            .date()
-            .typeError('Por favor, ingrese una fecha válida')
-            .required('La fecha de entrega es obligatoria'),
-
-        time: yup
-            .string()
-            .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Ingrese una hora válida (HH:mm)')
-            .required('La hora de entrega es obligatoria'),
-
-        grade: yup
-            .object({
-                _id: yup.string().required(),
-                name: yup.string().required(),
-            })
-            .nullable()
-            .required('Debe seleccionar el grado del usuario que recibe'),
-
-        otherGrade: yup
-            .string()
-            .when('grade', {
-                is: (val: unknown) => (val as GradeType)?.name === 'Otro',
-                then: (schema) =>
-                    schema
-                        .required('Por favor, especifique el grado del usuario que recibe')
-                        .min(2, 'El grado debe tener al menos 2 caracteres')
-                        .max(50, 'El grado no debe exceder los 50 caracteres'),
-                otherwise: (schema) => schema.notRequired(),
-            }),
-
-        name: yup
-            .string()
-            .required('El nombre del usuario que recibe es obligatorio')
-            .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El nombre solo puede contener letras y espacios')
-            .min(2, 'El nombre debe tener al menos 2 caracteres')
-            .max(50, 'El nombre no debe superar los 50 caracteres'),
-
-        lastName: yup
-            .string()
-            .required('El apellido del usuario que recibe es obligatorio')
-            .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El apellido solo puede contener letras y espacios')
-            .min(2, 'El apellido debe tener al menos 2 caracteres')
-            .max(50, 'El apellido no debe superar los 50 caracteres'),
-
-        location: yup
-            .object({
-                _id: yup.string().required(),
-                name: yup.string().required(),
-            })
-            .nullable()
-            .required('Seleccione el lugar donde se entrega el activo'),
-
-        otherLocation: yup
-            .string()
-            .when('location', {
-                is: (val: unknown) => (val as LocationType)?.name === 'OTRO',
-                then: (schema) =>
-                    schema
-                        .required('Por favor, especifique la ubicación donde se entrega el activo')
-                        .min(3, 'La ubicación donde se entrega el activo debe tener al menos 3 caracteres')
-                        .max(50, 'La ubicación donde se entrega el activo no debe exceder los 50 caracteres'),
-                otherwise: (schema) => schema.notRequired(),
-            }),
-
-        description: yup
-            .string()
-            .transform((value) => (value?.trim() === '' ? undefined : value))
-            .min(10, 'La descripción debe tener al menos 10 caracteres')
-            .max(1000, 'La descripción no debe superar los 1000 caracteres')
-            .notRequired(),
-    })
-
-
     const theme = useTheme()
+
+    const { defaultValues } = useSelector((state: RootState) => state.registerBorrowing)
 
     useEffect(() => {
         const fectLocation = async () => {
             try {
-                const response = await instance.get('/activos/location')
+                const response = await instance.get('/entregas/location')
                 const data = response.data
                 setLocation([...data, { name: 'OTRO', _id: 'otro' }])
             } catch (error) {
@@ -146,15 +138,14 @@ const AddEntrega = ({ toggle, handleSave }: Props) => {
     useEffect(() => {
         const fetch = async () => {
             try {
-                const response = await instance.get('/users/grades')
+                const response = await instance.get('/entregas/grades')
                 setGrades([...response.data, { name: 'Otro', _id: 'Other' }])
             } catch (error) {
                 console.log('error al solicitar grados', error)
             }
         }
         fetch()
-    }, [defaultValues, toggle])
-
+    }, [toggle])
     const dispatch = useDispatch<AppDispatch>()
 
     const {
@@ -167,27 +158,38 @@ const AddEntrega = ({ toggle, handleSave }: Props) => {
         defaultValues,
         mode: 'onChange',
         resolver: yupResolver(schema)
-    })
-    const otherGrade = watch('grade')
+    });
 
     const onSubmit = (data: defaultValuesType) => {
-        handleSave(data);
-        toggle()
-        reset()
+        const payload = {
+            ...data,
+            date: typeof data.date === 'string' ? data.date : new Date(data.date).toISOString().split('T')[0]
+        }
+        dispatch(setData(payload))
+        handleSave(payload)
     }
-    const otherLocation = watch('location');
+
 
     const handleOnclickCancel = () => {
-        reset()
-        toggle()
-    }
+        if (mode === 'create') {
+            reset({ ...initialState.defaultValues });
+            dispatch(resetBorrowingRegister());
+        } else {
+            reset(defaultValues)
+        }
+        toggle();
+    };
+
+
+    const otherLocation = watch('location');
+    const otherGrade = watch('grade')
 
     return (
         <Box>
             <form autoComplete="off" onSubmit={handleSubmit(onSubmit)}>
                 <fieldset style={{ border: `1.5px solid ${theme.palette.divider}`, borderRadius: 10, paddingTop: 20 }}>
                     <legend style={{ textAlign: 'center' }}>
-                        <Typography variant='subtitle2'>Realizar entrega</Typography>
+                        <Typography variant='subtitle2'>{mode === 'create' ? 'Realizar entrega' : 'Editar entrega'}</Typography>
                     </legend>
                     <Grid container spacing={2}>
                         <Grid item xs={6}>
@@ -228,7 +230,7 @@ const AddEntrega = ({ toggle, handleSave }: Props) => {
                                 {errors.time && <FormHelperText sx={{ color: 'error.main' }}>{errors.time.message}</FormHelperText>}
                             </FormControl>
                         </Grid>
-                        <Grid item xs={6}>
+                        {grades.length > 0 && (<Grid item xs={6}>
                             <FormControl fullWidth sx={{ mb: 6 }}>
                                 <InputLabel id="grade-select">Grado</InputLabel>
                                 <Controller
@@ -256,7 +258,7 @@ const AddEntrega = ({ toggle, handleSave }: Props) => {
                                 />{!errors.grade && <FormHelperText sx={{ color: 'secondary.main' }}>Grado del usuario que recibe</FormHelperText>}
                                 {errors.grade && <FormHelperText sx={{ color: 'error.main' }}>{errors.grade?.message || errors.grade.name?.message || errors.grade._id?.message}</FormHelperText>}
                             </FormControl>
-                        </Grid>
+                        </Grid>)}
                         {otherGrade?.name == 'Otro' &&
                             <Grid item xs={6}>
                                 <FormControl fullWidth sx={{ mb: 3 }}>
@@ -319,7 +321,7 @@ const AddEntrega = ({ toggle, handleSave }: Props) => {
                                 {errors.lastName && <FormHelperText sx={{ color: 'error.main' }}>{errors.lastName.message}</FormHelperText>}
                             </FormControl>
                         </Grid>
-                        <Grid item xs={6}>
+                        {location.length > 0 && (<Grid item xs={6}>
                             <FormControl fullWidth sx={{ mb: 6 }}>
                                 <InputLabel id="location-select">Ubicacion</InputLabel>
                                 <Controller
@@ -347,7 +349,7 @@ const AddEntrega = ({ toggle, handleSave }: Props) => {
                                 {!errors.location && <FormHelperText sx={{ color: 'secondary.main' }}>Lugar donde presta el activo</FormHelperText>}
                                 {errors.location && <FormHelperText sx={{ color: 'error.main' }}>{errors.location?.message || errors.location.name?.message || errors.location._id?.message}</FormHelperText>}
                             </FormControl>
-                        </Grid>
+                        </Grid>)}
                         {otherLocation?.name == 'OTRO' &&
                             <Grid item xs={6}>
                                 <FormControl fullWidth sx={{ mb: 3 }}>
@@ -416,4 +418,4 @@ const AddEntrega = ({ toggle, handleSave }: Props) => {
     )
 }
 
-export default AddEntrega
+export default AddBorrowing

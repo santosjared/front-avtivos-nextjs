@@ -5,12 +5,10 @@ import Icon from 'src/@core/components/icon';
 import baseUrl from 'src/configs/environment'
 import CustomChip from 'src/@core/components/mui/chip'
 import { hexToRGBA } from "src/@core/utils/hex-to-rgba";
-import { useDispatch } from "react-redux";
-import { AppDispatch, RootState } from "src/store";
-import { addEntrega, updateEntrega } from "src/store/entrega";
+import { RootState } from "src/store";
 import { useSelector } from "react-redux";
-import { resetBorrowing } from "src/store/borrowing";
-import { resetBorrowingRegister } from "src/store/borrowing/register";
+import Swal from 'sweetalert2'
+import { instance } from "src/configs/axios";
 
 interface SubCategoryType {
     _id?: string
@@ -68,11 +66,8 @@ interface RegisterType {
     grade: GradeType | null
     name: string
     lastName: string
-    location: LocationType | null
+    code: string
     description: string
-    otherLocation: string
-    otherGrade: string
-
 }
 
 interface CellType {
@@ -84,17 +79,13 @@ interface CellType {
 }
 
 interface Props {
-    setStep: (step: 'borrowing' | 'add' | 'confirmed') => void
     activos: ActivosType[]
     register: RegisterType | null
-    limit: number
-    page: number
-    mode: 'create' | 'edit'
-    id?: string
-    setActivos: React.Dispatch<React.SetStateAction<ActivosType[]>>
+    toggle: () => void
+    close: () => void
 }
 
-const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = 'create', id }: Props) => {
+const Confirmar = ({ activos, register, toggle, close }: Props) => {
 
     const [pageSize, setPageSize] = useState(10);
     const [file, setFile] = useState<File | null>(null);
@@ -103,8 +94,6 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
     const theme = useTheme()
 
     const { user } = useSelector((state: RootState) => state.auth)
-
-    const dispatch = useDispatch<AppDispatch>()
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -131,7 +120,7 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!file) {
             setFileError('Debe adjuntar un documento PDF antes de confirmar.');
             return;
@@ -144,7 +133,6 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
         formData.append('grade', register?.grade?._id ?? '');
         formData.append('name', register?.name.trim() ?? '');
         formData.append('lastName', register?.lastName.trim() ?? '');
-        formData.append('location', register?.location?._id ?? '');
         formData.append('user_en', user?._id || '')
 
         activos.forEach(activo => {
@@ -153,53 +141,29 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
 
         formData.append('document', file);
 
-        if (register?.otherLocation?.trim()) {
-            formData.append('otherLocation', register?.otherLocation?.trim());
-        }
-        if (register?.otherGrade?.trim()) {
-            formData.append('otherGrade', register?.otherGrade?.trim());
-        }
         if (register?.description?.trim()) {
             formData.append('description', register?.description?.trim());
         }
-
-        if (mode === 'create') {
-            dispatch(addEntrega({ data: formData, filtrs: { skip: page * limit, limit } }))
-                .unwrap()
-                .then(() => {
-                    setFile(null);
-                    setActivos([]);
-                    setStep('borrowing');
-                    dispatch(resetBorrowing())
-                    dispatch(resetBorrowingRegister())
-                });
-        } else {
-            dispatch(updateEntrega({ id: id || '', data: formData, filtrs: { skip: page * limit, limit } }))
-                .unwrap()
-                .then(() => {
-                    setFile(null);
-                    setActivos([]);
-                    setStep('borrowing');
-                    dispatch(resetBorrowing())
-                    dispatch(resetBorrowingRegister())
-                });
+        try {
+            const response = await instance.post('/devolucion', formData)
+            Swal.fire({
+                title: '¡Éxito!',
+                text: 'Devolución creado exitosamente',
+                icon: 'success',
+            })
+            close();
+        } catch (e: any) {
+            console.log(e)
+            Swal.fire({
+                title: '¡Error!',
+                text: `Error al intentar crear los datos. Código de error: ${e.response?.status ?? 'desconocido'
+                    }. Por favor, comuníquese con el administrador del sistema.`,
+                icon: 'error',
+            });
         }
     };
 
-
-    const handleDelete = (id: string) => {
-        setActivos(prev => prev.filter(item => item._id !== id));
-    };
-
     const columns = [
-        {
-            field: 'acctions', headerName: 'Acciones', minWidth: 80, flex: 0.8,
-            renderCell: ({ row }: CellType) => (
-                <IconButton size='small' onClick={() => handleDelete(row._id || '')}>
-                    <Icon icon='ic:outline-delete' fontSize={20} color={theme.palette.error.main} />
-                </IconButton>
-            )
-        },
         {
             field: 'code', headerName: 'Código', minWidth: 100, flex: 0.1,
             renderCell: ({ row }: CellType) => (
@@ -238,29 +202,6 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
             field: 'subcategory', headerName: 'Sub Categoría', minWidth: 140, flex: 0.14,
             renderCell: ({ row }: CellType) => <Typography variant="body2" noWrap>{row.subcategory?.name}</Typography>
         },
-        {
-            field: 'status',
-            headerName: 'Estado',
-            minWidth: 90,
-            flex: 0.09,
-            renderCell: ({ row }: CellType) => (
-                <Tooltip title={row.status?.name || ''} arrow>
-                    <span>
-                        <CustomChip
-                            skin='light'
-                            size='small'
-                            label={row.status?.name}
-                            rounded
-                            color={
-                                row.status?.name === 'Bueno' ? 'success' :
-                                    row.status?.name === 'Regular' ? 'warning' :
-                                        row.status?.name === 'Malo' ? 'error' : 'info'
-                            }
-                        />
-                    </span>
-                </Tooltip>
-            )
-        },
     ]
 
     return (
@@ -269,7 +210,7 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
                 <Card>
                     <CardContent sx={{ border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.primary.main }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Button variant="contained" color="info" onClick={() => setStep('add')} startIcon={<Icon icon='ic:baseline-arrow-back-ios' />}>Atras</Button>
+                            <Button variant="contained" color="info" onClick={toggle} startIcon={<Icon icon='ic:baseline-arrow-back-ios' />}>Atras</Button>
                             <Button variant="contained" color="success" onClick={handleSave} startIcon={<Icon icon='mdi:content-save' />}>Confirmar Entrega</Button>
                         </Box>
                     </CardContent>
@@ -279,9 +220,9 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
                                 border: fileError ? `1px solid ${theme.palette.error.main}` : `1px solid ${theme.palette.divider}`,
                                 backgroundColor: fileError && hexToRGBA(theme.palette.error.light, 0.1)
                             }}>
-                                <Typography variant="overline"><strong>Información de la antrega de activo</strong></Typography>
+                                <Typography variant="overline"><strong>Información de devolución de activo</strong></Typography>
                                 <Typography variant="body2" sx={{ mb: 3 }}>
-                                    <strong>Fecha de entrega:</strong>{' '}
+                                    <strong>Fecha de devolución:</strong>{' '}
                                     {register?.date ? (() => {
                                         const date = new Date(register.date)
                                         const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
@@ -289,12 +230,12 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
                                     })() : null}
                                 </Typography>
                                 <Typography variant="body2" sx={{ mb: 3 }}>
-                                    <strong>Hora de entrega:</strong> {register?.time}
+                                    <strong>Hora de devolución:</strong> {register?.time}
                                 </Typography>
                                 <Divider />
-                                <Typography variant="overline"><strong>Información de usuario que recibe</strong></Typography>
+                                <Typography variant="overline"><strong>Información de usuario que devuleve</strong></Typography>
                                 <Typography variant="body2" sx={{ mb: 3 }}>
-                                    <strong>Grado:</strong> {register?.otherGrade || register?.grade?.name}
+                                    <strong>Grado:</strong> {register?.grade?.name}
                                 </Typography>
                                 <Typography variant="body2" sx={{ mb: 3 }}>
                                     <strong>nombres:</strong> {register?.name}
@@ -303,7 +244,7 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
                                     <strong>Apellidos:</strong> {register?.lastName}
                                 </Typography>
                                 <Divider />
-                                <Typography variant="overline"><strong>Información de usuario que entrega</strong></Typography>
+                                <Typography variant="overline"><strong>Información de usuario que recibe</strong></Typography>
                                 <Typography variant="body2" sx={{ mb: 3 }}>
                                     <strong>Grado:</strong> {user?.grade?.name || ''}
                                 </Typography>
@@ -313,9 +254,6 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
                                 <Typography variant="body2" sx={{ mb: 3 }}>
                                     <strong>Apellidos:</strong> {user?.lastName || ''}
                                 </Typography>
-                                <Divider />
-                                <Typography variant="overline"><strong>Lugar donde se entrega el activo</strong></Typography>
-                                <Typography variant="body2" sx={{ mb: 3 }}>{register?.otherLocation || register?.location?.name}</Typography>
                                 <Divider />
                                 <Typography variant="overline"><strong>Descripción</strong></Typography>
                                 <Typography variant="body2" sx={{ mb: 3 }}>{register?.description}</Typography>
@@ -412,4 +350,4 @@ const Entrega = ({ setStep, activos, register, setActivos, page, limit, mode = '
     )
 }
 
-export default Entrega
+export default Confirmar

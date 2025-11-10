@@ -1,3 +1,5 @@
+import { GradeType } from "src/types/types"
+
 export type ErrCallbackType = (err: { [key: string]: string }) => void
 
 export type Actions = 'manage' | 'create' | 'read' | 'update' | 'delete'
@@ -36,6 +38,7 @@ export type UserDataType = {
   lastName: string,
   email: string,
   rememberMe?: boolean
+  grade: GradeType
   _id?: string
 }
 

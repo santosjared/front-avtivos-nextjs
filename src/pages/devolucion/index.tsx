@@ -7,15 +7,11 @@ import { RootState, AppDispatch } from 'src/store'
 import { useSelector } from 'react-redux'
 import { GradeType, UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
-import { deleteEntrega, fetchData } from 'src/store/entrega'
 import { styled } from '@mui/material/styles'
 import Link from 'next/link'
-import Entrega from 'src/views/pages/borrowing/Entrega'
-import Confirmed from 'src/views/pages/borrowing/Confirmed'
 import getConfig from 'src/configs/environment'
-import { setSelectedIds } from 'src/store/borrowing'
-import { setData } from 'src/store/borrowing/register'
-import { useRouter } from 'next/router'
+import Entregas from 'src/views/pages/devolucion/entregas'
+import { deleteDevolucion, fetchData } from 'src/store/devolucion'
 
 interface LocationType {
     _id: string
@@ -75,7 +71,7 @@ interface ActivosType {
     subcategory: SubCategoryType | null
 }
 
-interface EntregaType {
+interface DevolucionType {
     _id?: string
     code: string
     date: string
@@ -84,14 +80,13 @@ interface EntregaType {
     name: string
     lastName: string
     user_en: UserType
-    location: LocationType
     activos: ActivosType[]
     documentUrl?: string
     description?: string
 }
 
 interface CellType {
-    row: EntregaType
+    row: DevolucionType
 }
 const StyledLink = styled(Link)(({ theme }) => ({
     fontWeight: 600,
@@ -104,18 +99,20 @@ const StyledLink = styled(Link)(({ theme }) => ({
     }
 }))
 
-const Borrowing = () => {
+const Devolucion = () => {
 
     const [pageSize, setPageSize] = useState<number>(10)
     const [page, setPage] = useState<number>(0)
     const [field, setField] = useState<string>('')
-    const [step, setStep] = useState<'borrowing' | 'add' | 'confirmed'>('borrowing')
+    const [openEntrega, setOpenEntrega] = useState<boolean>(false)
     const [register, setRegister] = useState<RegisterType | null>(null)
     const [activos, setActivos] = useState<ActivosType[]>([])
     const [mode, setMode] = useState<'create' | 'edit'>('create')
     const [id, setId] = useState<string>('')
 
     const dispatch = useDispatch<AppDispatch>()
+
+    const toggle = () => setOpenEntrega(!openEntrega)
 
     const store = useSelector((state: RootState) => state.entrega)
     useEffect(() => {
@@ -144,7 +141,7 @@ const Borrowing = () => {
             flex: 0.1,
             minWidth: 100,
             field: 'date',
-            headerName: 'Fecha de entrega',
+            headerName: 'Fecha de devolución',
             renderCell: ({ row }: CellType) => {
                 const date = new Date(row.date)
                 const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
@@ -159,7 +156,7 @@ const Borrowing = () => {
             flex: 0.09,
             minWidth: 90,
             field: 'hrs',
-            headerName: 'Hora de la entrega ',
+            headerName: 'Hora de devolución',
             renderCell: ({ row }: CellType) => {
                 return (
                     <Tooltip title={row.time}>
@@ -172,8 +169,8 @@ const Borrowing = () => {
         {
             flex: 0.22,
             minWidth: 220,
-            field: 'user_entrega',
-            headerName: 'Usuario que entrega',
+            field: 'user_dev',
+            headerName: 'Usuario que devuelve',
             renderCell: ({ row }: CellType) => {
                 const fullname = `${row.user_en?.grade?.name || ''} ${row.user_en?.name || ''} ${row.user_en?.lastName || ''}`
                 return (
@@ -194,20 +191,6 @@ const Borrowing = () => {
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
-                    </Tooltip>
-
-                )
-            }
-        },
-        {
-            flex: 0.20,
-            minWidth: 200,
-            field: 'location',
-            headerName: 'ubicacion',
-            renderCell: ({ row }: CellType) => {
-                return (
-                    <Tooltip title={row.location?.name}>
-                        <Typography variant='body2' noWrap>{row.location?.name}</Typography>
                     </Tooltip>
 
                 )
@@ -258,17 +241,16 @@ const Borrowing = () => {
             sortable: false,
             headerName: 'Acciones',
             renderCell: ({ row }: CellType) => {
-                return (<RowOptions entrega={row} />)
+                return (<RowOptions devolucion={row} />)
             }
         }
     ]
-    const RowOptions = ({ entrega }: { entrega: EntregaType }) => {
+    const RowOptions = ({ devolucion }: { devolucion: DevolucionType }) => {
 
         const dispatch = useDispatch<AppDispatch>()
         const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
         const rowOptionsOpen = Boolean(anchorEl)
         const theme = useTheme()
-        const router = useRouter()
         const handleRowOptionsClick = (event: MouseEvent<HTMLElement>) => {
             setAnchorEl(event.currentTarget)
         }
@@ -279,7 +261,7 @@ const Borrowing = () => {
         const handleDow = async () => {
             setAnchorEl(null)
             const confirme = await Swal.fire({
-                title: `¿Estas seguro de eliminar la entrega del activo con el código: ${entrega.code || ''} ?`,
+                title: `¿Estas seguro de eliminar la devoloción del activo con el código: ${devolucion.code || ''} ?`,
                 icon: "warning",
                 showCancelButton: true,
                 cancelButtonColor: theme.palette.info.main,
@@ -288,7 +270,7 @@ const Borrowing = () => {
                 confirmButtonText: 'Eliminar',
             }).then(async (result) => { return result.isConfirmed });
             if (confirme) {
-                dispatch(deleteEntrega({ filters: { skip: page * pageSize, limit: pageSize }, id: entrega._id || '' }))
+                dispatch(deleteDevolucion({ filters: { skip: page * pageSize, limit: pageSize }, id: devolucion._id || '' }))
             }
         }
 
@@ -298,23 +280,23 @@ const Borrowing = () => {
 
 
         const handleEdit = () => {
-            const select = entrega.activos.map(activo => activo._id)
-            const defaultvalue = {
-                date: entrega.date,
-                time: entrega.time,
-                grade: entrega.grade,
-                name: entrega.name,
-                lastName: entrega.lastName,
-                location: entrega.location,
-                description: entrega.description,
-                otherLocation: '',
-                otherGrade: ''
-            }
-            dispatch(setSelectedIds(select));
-            dispatch(setData(defaultvalue))
-            setId(entrega._id || '');
+            // const select = entrega.activos.map(activo => activo._id)
+            // const defaultvalue = {
+            //     date: entrega.date,
+            //     time: entrega.time,
+            //     grade: entrega.grade,
+            //     name: entrega.name,
+            //     lastName: entrega.lastName,
+            //     location: entrega.location,
+            //     description: entrega.description,
+            //     otherLocation: '',
+            //     otherGrade: ''
+            // }
+            // dispatch(setSelectedIds(select));
+            // dispatch(setData(defaultvalue))
+            // setId(entrega._id || '');
             setMode('edit');
-            setStep('add');
+            // setStep('add');
             setAnchorEl(null);
         }
 
@@ -349,10 +331,6 @@ const Borrowing = () => {
                         <Icon icon='mdi:delete' fontSize={20} color={theme.palette.error.main} />
                         Eliminar
                     </MenuItem>
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={() => router.push(`/devolver/${entrega._id}`)}>
-                        <Icon icon='mdi:clipboard-arrow-up' fontSize={20} color={theme.palette.success.main} />
-                        devolver
-                    </MenuItem>
                     <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleUp}>
                         <Icon icon='mdi:printer' fontSize={20} color={theme.palette.error.main} />
                         generar pdf
@@ -363,132 +341,111 @@ const Borrowing = () => {
             </>
         )
     }
-    const StepBorrowing = () => {
-        return (
-            <Grid container spacing={6}>
-                <Grid item xs={12}>
-                    <Card>
-                        <Box sx={{ p: 5, pb: 0 }}>
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: { xs: 'column', sm: 'row' },
-                                    alignItems: { xs: 'stretch', sm: 'center' },
-                                    flexWrap: 'nowrap',
-                                    gap: 10,
-                                    width: '100%',
-                                }}
-                            >
-                                <Box sx={{ display: 'flex', flex: 1 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Buscar"
-                                        variant="outlined"
-                                        name="search"
-                                        autoComplete="off"
-                                        value={field}
-                                        onChange={(e) => setField(e.target.value)}
-                                        sx={{
-                                            flex: 1,
-                                            '& .MuiInputBase-root': {
-                                                borderTopRightRadius: 0,
-                                                borderBottomRightRadius: 0,
-                                            }
-                                        }}
-                                    />
+    return (
+        <>
+            {openEntrega ? <Entregas toggle={toggle} /> :
+                <Grid container spacing={6}>
+                    <Grid item xs={12}>
+                        <Card>
+                            <Box sx={{ p: 5, pb: 0 }}>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: { xs: 'column', sm: 'row' },
+                                        alignItems: { xs: 'stretch', sm: 'center' },
+                                        flexWrap: 'nowrap',
+                                        gap: 10,
+                                        width: '100%',
+                                    }}
+                                >
+                                    <Box sx={{ display: 'flex', flex: 1 }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Buscar"
+                                            variant="outlined"
+                                            name="search"
+                                            autoComplete="off"
+                                            value={field}
+                                            onChange={(e) => setField(e.target.value)}
+                                            sx={{
+                                                flex: 1,
+                                                '& .MuiInputBase-root': {
+                                                    borderTopRightRadius: 0,
+                                                    borderBottomRightRadius: 0,
+                                                }
+                                            }}
+                                        />
 
-                                    <Button
-                                        variant="outlined"
-                                        onClick={handleFilters}
-                                        startIcon={<Icon icon='mdi:search' />}
-                                        sx={{
-                                            borderRadius: 0,
-                                            borderLeft: 1
-                                        }}
-                                    >
-                                        Buscar
-                                    </Button>
+                                        <Button
+                                            variant="outlined"
+                                            onClick={handleFilters}
+                                            startIcon={<Icon icon='mdi:search' />}
+                                            sx={{
+                                                borderRadius: 0,
+                                                borderLeft: 1
+                                            }}
+                                        >
+                                            Buscar
+                                        </Button>
 
+                                        <Button
+                                            variant="contained"
+                                            sx={{
+                                                borderTopLeftRadius: 0,
+                                                borderBottomLeftRadius: 0
+                                            }}
+                                        >
+                                            Todos
+                                        </Button>
+                                    </Box>
                                     <Button
+                                        onClick={toggle}
                                         variant="contained"
-                                        sx={{
-                                            borderTopLeftRadius: 0,
-                                            borderBottomLeftRadius: 0
-                                        }}
+                                        color='success'
+                                        startIcon={<Icon icon='mdi:add' />}
+                                        sx={{ p: 3.5 }}
                                     >
-                                        Todos
+                                        Nuevo devolucion
                                     </Button>
                                 </Box>
-                                <Button
-                                    onClick={() => setStep('add')}
-                                    variant="contained"
-                                    color='success'
-                                    startIcon={<Icon icon='mdi:add' />}
-                                    sx={{ p: 3.5 }}
-                                >
-                                    Nuevo entrega
-                                </Button>
                             </Box>
-                        </Box>
-                        <Box sx={{ p: 5 }}>
-                            <Typography variant='subtitle2'>
-                                Lista de entregados
-                            </Typography>
-                        </Box>
-                        <DataGrid
-                            autoHeight
-                            rows={store.data}
-                            columns={columns}
-                            getRowId={(row: any) => row._id}
-                            pagination
-                            pageSize={pageSize}
-                            disableSelectionOnClick
-                            onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                            rowsPerPageOptions={[10, 25, 50]}
-                            rowCount={store.total}
-                            paginationMode="server"
-                            onPageChange={(newPage) => setPage(newPage)}
-                            sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
-                            localeText={{
-                                MuiTablePagination: {
-                                    labelRowsPerPage: 'Filas por página:',
-                                },
-                            }
-                            }
-                        />
-                    </Card>
+                            <Box sx={{ p: 5 }}>
+                                <Typography variant='subtitle2'>
+                                    Lista de devueltos
+                                </Typography>
+                            </Box>
+                            <DataGrid
+                                autoHeight
+                                rows={store.data}
+                                columns={columns}
+                                getRowId={(row: any) => row._id}
+                                pagination
+                                pageSize={pageSize}
+                                disableSelectionOnClick
+                                onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                                rowsPerPageOptions={[10, 25, 50]}
+                                rowCount={store.total}
+                                paginationMode="server"
+                                onPageChange={(newPage) => setPage(newPage)}
+                                sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
+                                localeText={{
+                                    MuiTablePagination: {
+                                        labelRowsPerPage: 'Filas por página:',
+                                    },
+                                }
+                                }
+                            />
+                        </Card>
+                    </Grid>
                 </Grid>
-            </Grid>
-        )
-    }
-    switch (step) {
-        case 'borrowing': return (<StepBorrowing />)
-        case 'add': return (<Entrega
-            setStep={setStep}
-            setActivos={setActivos}
-            setRegister={setRegister}
-            mode={mode}
-            setId={setId}
-            id={id}
-        />)
-        case 'confirmed': return (
-            <Confirmed
-                setStep={setStep}
-                setActivos={setActivos}
-                activos={activos}
-                register={register}
-                page={page}
-                limit={pageSize}
-                mode={mode}
-                id={id}
-            />)
-        default: return (<StepBorrowing />)
-    }
+            }
+        </>
+    )
 }
-Borrowing.acl = {
+Devolucion.acl = {
     action: 'read',
-    subject: 'entrega'
+    subject: 'devolucion'
 }
 
-Borrowing.authGuard = true;
-export default Borrowing
+Devolucion.authGuard = true;
+export default Devolucion

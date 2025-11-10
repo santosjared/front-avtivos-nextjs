@@ -41,8 +41,8 @@ const navigation = (): VerticalNavItemsType => {
     },
     {
       title: 'Devolucion de activos',
-      path: '/return',
-      subject: 'return',
+      path: '/devolucion',
+      subject: 'devolucion',
       icon: 'mdi:human-dolly'
     },
     {

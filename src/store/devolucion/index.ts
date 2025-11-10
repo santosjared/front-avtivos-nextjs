@@ -46,6 +46,25 @@ interface ActivosType {
     subcategory: SubCategoryType | null
 }
 
+interface DevolucionType {
+    _id?: string
+    code: string
+    date: string
+    time: string
+    grade: GradeType
+    name: string
+    lastName: string
+    user_en: UserType
+    activos: ActivosType[]
+    documentUrl?: string
+    description?: string
+}
+
+interface FetchParams {
+    skip?: number
+    limit?: number
+    field?: string
+}
 interface EntregaType {
     code: string
     date: string
@@ -60,31 +79,25 @@ interface EntregaType {
     description?: string
 }
 
-interface FetchParams {
-    skip?: number
-    limit?: number
-    field?: string
-}
-
-interface ActivosState {
-    data: EntregaType[]
+interface InicialStateType {
+    data: DevolucionType[]
     total: number
-    loading: boolean
-    error: string | null
+    entregas: EntregaType[]
+    totalEntregas: number
 }
 
-const initialState: ActivosState = {
+const initialState: InicialStateType = {
     data: [],
+    entregas: [],
+    totalEntregas: 0,
     total: 0,
-    loading: false,
-    error: null,
 }
 
 export const fetchData = createAsyncThunk(
-    'entrega/fetchData',
+    'devolucion/fetchData',
     async (filters?: FetchParams) => {
         try {
-            const response = await instance.get('/entregas', {
+            const response = await instance.get('/devolucion', {
                 params: filters,
             })
             return response.data
@@ -101,18 +114,39 @@ export const fetchData = createAsyncThunk(
     }
 )
 
-export const addEntrega = createAsyncThunk(
-    'entrega/addentrega',
+export const fetchDataEntrega = createAsyncThunk(
+    'devolucion/fetchDataEntrega',
+    async (filters?: FetchParams) => {
+        try {
+            const response = await instance.get('/devolucion/entregas', {
+                params: filters,
+            })
+            return response.data
+        } catch (e: any) {
+            console.log(e)
+            Swal.fire({
+                title: '¡Error!',
+                text: `Error al intentar traer los datos. Código de error: ${e.response?.status ?? 'desconocido'
+                    }. Por favor, comuníquese con el administrador del sistema.`,
+                icon: 'error',
+            });
+            return null
+        }
+    }
+)
+
+export const addDevolucion = createAsyncThunk(
+    'devolucion/addDevolucion',
     async (
         data: { data: FormData; filtrs: FetchParams },
         { dispatch }
     ) => {
         try {
-            const response = await instance.post('/entregas', data.data)
+            const response = await instance.post('/devolucion', data.data)
 
             Swal.fire({
                 title: '¡Éxito!',
-                text: 'Activo creado exitosamente',
+                text: 'Devolución creado exitosamente',
                 icon: 'success',
             })
 
@@ -131,18 +165,18 @@ export const addEntrega = createAsyncThunk(
     }
 )
 
-export const updateEntrega = createAsyncThunk(
-    'entrega/updateEntregas',
+export const updateDevolucion = createAsyncThunk(
+    'devolucion/updateDevolucion',
     async (
         data: { id: string; data: FormData; filtrs: FetchParams },
         { dispatch }
     ) => {
         try {
-            const response = await instance.put(`/entregas/${data.id}`, data.data)
+            const response = await instance.put(`/devolucin/${data.id}`, data.data)
 
             Swal.fire({
                 title: '¡Éxito!',
-                text: 'Activo actualizado exitosamente',
+                text: 'Devolución actualizado exitosamente',
                 icon: 'success',
             })
 
@@ -161,15 +195,15 @@ export const updateEntrega = createAsyncThunk(
     }
 )
 
-export const deleteEntrega = createAsyncThunk(
-    'entrega/deleteEntrega',
+export const deleteDevolucion = createAsyncThunk(
+    'devolucion/deleteDevolucion',
     async (data: { id: string; filters: FetchParams }, { dispatch }) => {
         try {
-            const response = await instance.delete(`/entregas/${data.id}`)
+            const response = await instance.delete(`/devolucion/${data.id}`)
 
             Swal.fire({
                 title: '¡Éxito!',
-                text: 'Activo eliminado exitosamente',
+                text: 'Devolución eliminado exitosamente',
                 icon: 'success',
             })
 
@@ -188,8 +222,8 @@ export const deleteEntrega = createAsyncThunk(
     }
 )
 
-export const entregaSlice = createSlice({
-    name: 'entrega',
+export const devolucionSlice = createSlice({
+    name: 'devolucion',
     initialState,
     reducers: {},
     extraReducers: (builder) => {
@@ -198,7 +232,11 @@ export const entregaSlice = createSlice({
                 state.data = action.payload?.result || []
                 state.total = action.payload?.total || 0
             })
+            .addCase(fetchDataEntrega.fulfilled, (state, action) => {
+                state.entregas = action.payload?.result || []
+                state.totalEntregas = action.payload?.total || 0
+            })
     },
 })
 
-export default entregaSlice.reducer
+export default devolucionSlice.reducer

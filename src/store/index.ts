@@ -5,6 +5,9 @@ import auth from './auth';
 import activos from './activos'
 import entrega from './entrega'
 import contable from './contable'
+import borrowing from './borrowing';
+import registerBorrowing from './borrowing/register'
+import devolucion from './devolucion'
 
 export const store = configureStore({
     reducer: {
@@ -13,7 +16,10 @@ export const store = configureStore({
         auth,
         activos,
         entrega,
-        contable
+        contable,
+        borrowing,
+        registerBorrowing,
+        devolucion
     },
     middleware: getDefaultMiddleware =>
         getDefaultMiddleware({

@@ -1,12 +1,16 @@
-import { Box, Button, Card, Divider, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Tooltip, Typography } from "@mui/material"
+import { Box, Button, Card, CardContent, CircularProgress, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Tooltip, Typography } from "@mui/material"
 import { DataGrid } from "@mui/x-data-grid"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Icon from 'src/@core/components/icon';
 import AddDraw from "src/components/draw";
 import baseUrl from 'src/configs/environment'
 import CustomChip from 'src/@core/components/mui/chip'
-import { instance } from "src/configs/axios";
-import AddEntrega from "./Register";
+import { useSelector } from "react-redux";
+import { AppDispatch, RootState } from "src/store";
+import { setDrawOpen, handleFilters, setField, fetchData, setPageSize, setPage, setSelectedIds, fetchCategories, fectSubcategories, fetchStatus, resetBorrowing } from "src/store/borrowing";
+import { useDispatch } from "react-redux";
+import AddBorrowing from "./Register";
+import { resetBorrowingRegister } from "src/store/borrowing/register";
 
 interface SubCategoryType {
     _id?: string
@@ -74,11 +78,6 @@ interface RegisterType {
 
 interface CellType {
     row: ActivosType
-}
-
-interface DataType {
-    data: ActivosType[]
-    total: number
 }
 
 
@@ -177,121 +176,80 @@ interface Props {
     setStep: (step: 'borrowing' | 'add' | 'confirmed') => void
     setRegister: (data: RegisterType) => void
     setActivos: (data: ActivosType[]) => void
+    setId: (id: string) => void
+    mode: 'create' | 'edit'
+    id: string
 }
 
-const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
+const Borrowing = ({ setStep, setRegister, setActivos, mode = 'create', id, setId }: Props) => {
 
-    const [field, setField] = useState('');
-    const [pageSize, setPageSize] = useState(10);
-    const [page, setPage] = useState(0);
-    const [drawOpen, setDrawOpen] = useState<boolean>(false)
-    const [category, setCategory] = useState<ContableType[]>([])
-    const [status, setStatus] = useState<StatusType[]>([])
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [selectedSubCategory, setSelectedSubcategory] = useState<string>('')
-    const [selectedStatus, setSelectedStatus] = useState('');
-    const [subcategory, setSubCategory] = useState<SubCategoryType[]>([])
-    const [data, setData] = useState<DataType>({ data: [], total: 0 });
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const dispatch = useDispatch<AppDispatch>()
+    const {
+        drawOpen,
+        data,
+        total,
+        category,
+        field,
+        page,
+        pageSize,
+        selectedCategory,
+        selectedIds,
+        selectedStatus,
+        selectedSubCategory,
+        status,
+        subcategory,
+    } = useSelector((state: RootState) => state.borrowing)
 
-    const toggleDrawer = () => setDrawOpen(!drawOpen)
+    const toggleDrawer = () => dispatch(setDrawOpen(!drawOpen));
 
     useEffect(() => {
-        const fectCategory = async () => {
-            try {
-                const response = await instance.get('/contables')
-                const data = response.data
-                setCategory(data || [])
-            } catch (error) {
-                console.error('error al extraer categorias', error)
-            }
-        }
-        fectCategory();
+        dispatch(fetchData({ skip: page * pageSize, limit: pageSize, id }))
+    }, [page, pageSize])
+
+    useEffect(() => {
+        dispatch(fetchCategories())
+        dispatch(fectSubcategories())
+        dispatch(fetchStatus())
     }, [])
-
-    useEffect(() => {
-        const fectStatus = async () => {
-            try {
-                const response = await instance.get('/activos/status')
-                const data = response.data
-                setStatus(data)
-            } catch (error) {
-                console.error('error al extraer estados', error)
-            }
-        }
-        fectStatus();
-    }, [])
-
-    useEffect(() => {
-        const fectSubCategory = async () => {
-            try {
-                const response = await instance.get('/contables/subcategories')
-                const data = response.data
-                setSubCategory(data || [])
-            } catch (error) {
-                console.error('error al extraer la sub categoria', error)
-            }
-        }
-        fectSubCategory();
-    }, [])
-
-    useEffect(() => {
-        const fetchActivosAbailable = async () => {
-            const filters = { skip: page * pageSize, limit: pageSize }
-            try {
-                const response = await instance.get('/activos/activos-available',
-                    {
-                        params: filters,
-                    }
-                )
-                setData({ data: response.data?.result || [], total: response.data?.total || 0 })
-            } catch (error) {
-                console.error('error al extraer activos validos', error)
-            }
-        }
-        fetchActivosAbailable();
-    }, [open, page, pageSize])
-
-    const handleFilters = async (value: string) => {
-
-        const filters = { field: value, skip: page * pageSize, limit: pageSize }
-        try {
-            const response = await instance.get('/activos/activos-available',
-                {
-                    params: filters,
-                }
-            )
-            setData({ data: response.data?.result || [], total: response.data?.total || 0 })
-        } catch (error) {
-            console.error('error al extraer activos validos', error)
-        }
-    }
 
     const handleSave = (entrega: RegisterType) => {
-        const selectedActivos = data.data.filter(row => selectedIds.includes(row._id || ''))
+        const selectedActivos = data.filter(row => selectedIds.includes(row._id || ''))
         setRegister(entrega)
         setActivos(selectedActivos)
         setStep('confirmed')
     }
 
-
+    const handleBack = () => {
+        dispatch(resetBorrowing())
+        dispatch(resetBorrowingRegister())
+        setStep('borrowing')
+        setId('')
+    }
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>
                 <Card>
-                    <Box sx={{ display: "flex", justifyContent: 'space-between', p: 5, pb: 2 }}>
-                        <Button variant="outlined" color="secondary" onClick={() => setStep('borrowing')} startIcon={<Icon icon='ic:baseline-arrow-back-ios' />}>Atras</Button>
-                        <Button
-                            onClick={toggleDrawer}
-                            variant="contained"
-                            sx={{ p: 3.5 }}
-                            disabled={selectedIds.length <= 0}
-                            color="info"
-                        >
-                            Realizar entrega
-                        </Button>
-                    </Box>
-                    <Divider />
+                    <CardContent sx={{ border: theme => `1px solid ${theme.palette.divider}`, backgroundColor: theme => theme.palette.primary.main }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Button
+                                variant="contained"
+                                color="info"
+                                onClick={handleBack}
+                                startIcon={<Icon icon='ic:baseline-arrow-back-ios' />}
+                            >
+                                Atras
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="success"
+                                onClick={toggleDrawer}
+                                startIcon={<Icon icon='mdi:navigate-next' />}
+                                disabled={selectedIds.length === 0}
+                            >
+                                {mode === 'create' ? 'Realizar entrega' : 'Editar entrega'}
+                            </Button>
+                        </Box>
+                    </CardContent>
                     <Box sx={{ p: 5, pb: 0 }}>
                         <Box
                             sx={{
@@ -313,8 +271,16 @@ const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
                                     value={selectedCategory}
                                     onChange={(e) => {
                                         const selected = e.target.value
-                                        setSelectedCategory(selected)
-                                        handleFilters(selected)
+                                        dispatch(handleFilters({
+                                            option: 'category',
+                                            filters: {
+                                                field: selected,
+                                                skip: page * pageSize,
+                                                limit: pageSize,
+                                                id
+                                            }
+                                        }
+                                        ))
                                     }}
                                 >
                                     {category.map((cat, index) => (
@@ -332,8 +298,16 @@ const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
                                     value={selectedSubCategory}
                                     onChange={(e) => {
                                         const selected = e.target.value
-                                        setSelectedSubcategory(selected)
-                                        handleFilters(selected)
+                                        dispatch(handleFilters({
+                                            option: 'subcategory',
+                                            filters: {
+                                                field: selected,
+                                                skip: page * pageSize,
+                                                limit: pageSize,
+                                                id
+                                            }
+                                        }
+                                        ))
                                     }}
                                 >
                                     {subcategory.map((cat, index) => (
@@ -351,8 +325,16 @@ const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
                                     value={selectedStatus}
                                     onChange={(e) => {
                                         const selected = e.target.value
-                                        setSelectedStatus(selected)
-                                        handleFilters(selected)
+                                        dispatch(handleFilters({
+                                            option: 'status',
+                                            filters: {
+                                                field: selected,
+                                                skip: page * pageSize,
+                                                limit: pageSize,
+                                                id
+                                            }
+                                        }
+                                        ))
                                     }}
                                 >
                                     {status.map((st, index) => (
@@ -368,7 +350,7 @@ const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
                                     name="search"
                                     autoComplete="off"
                                     value={field}
-                                    onChange={(e) => setField(e.target.value)}
+                                    onChange={(e) => dispatch(setField(e.target.value))}
                                     sx={{
                                         flex: 1,
                                         '& .MuiInputBase-root': {
@@ -380,7 +362,13 @@ const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
 
                                 <Button
                                     variant="outlined"
-                                    onClick={() => handleFilters(field)}
+                                    onClick={() => dispatch(fetchData({
+                                        field: field || selectedCategory || selectedSubCategory || selectedStatus,
+                                        skip: page * pageSize,
+                                        limit: pageSize,
+                                        id
+                                    }
+                                    ))}
                                     startIcon={<Icon icon='mdi:search' />}
                                     sx={{
                                         borderRadius: 0,
@@ -392,7 +380,15 @@ const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
 
                                 <Button
                                     variant="contained"
-                                    onClick={() => handleFilters('')}
+                                    onClick={() => {
+                                        dispatch(fetchData({
+                                            field: '',
+                                            skip: page * pageSize,
+                                            limit: pageSize,
+                                            id
+                                        }
+                                        ))
+                                    }}
                                     sx={{
                                         borderTopLeftRadius: 0,
                                         borderBottomLeftRadius: 0
@@ -410,19 +406,25 @@ const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
                     </Box>
                     <DataGrid
                         autoHeight
-                        rows={data?.data || []}
+                        rows={data}
                         columns={columns}
-                        getRowId={(row: any) => row._id}
+                        getRowId={(row: any) => row._id!}
                         pagination
                         pageSize={pageSize}
                         checkboxSelection
-                        onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                        selectionModel={selectedIds.filter(id => data.some(row => row._id === id))}
+                        onPageSizeChange={(newPageSize) => dispatch(setPageSize(newPageSize))}
                         rowsPerPageOptions={[10, 25, 50]}
-                        rowCount={data?.total || 0}
+                        rowCount={total}
                         paginationMode="server"
-                        onPageChange={(newPage) => setPage(newPage)}
+                        onPageChange={(newPage) => dispatch(setPage(newPage))}
                         onSelectionModelChange={(newSelection: any) => {
-                            setSelectedIds(newSelection);
+                            const currentPageIds = data.map(row => row._id);
+                            const updatedSelection = [
+                                ...selectedIds.filter(id => !currentPageIds.includes(id)),
+                                ...newSelection,
+                            ];
+                            dispatch(setSelectedIds(updatedSelection));
                         }}
                         sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
                         localeText={{
@@ -432,14 +434,13 @@ const Entrega = ({ setStep, setRegister, setActivos }: Props) => {
                         }}
                     />
 
-
                 </Card>
             </Grid>
             <AddDraw open={drawOpen} toggle={toggleDrawer} title={'Registro del entrega'}>
-                <AddEntrega toggle={toggleDrawer} handleSave={handleSave} />
+                <AddBorrowing toggle={toggleDrawer} handleSave={handleSave} mode={mode} />
             </AddDraw>
         </Grid>
     )
 }
 
-export default Entrega
+export default Borrowing
