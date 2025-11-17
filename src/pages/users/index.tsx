@@ -1,5 +1,5 @@
-import React, { useState, MouseEvent, useEffect, Fragment } from 'react'
-import { Box, Button, Card, Grid, IconButton, TextField, Typography } from '@mui/material'
+import React, { useState, MouseEvent, useEffect } from 'react'
+import { Box, Button, Card, Grid, IconButton, TextField, Tooltip, Typography, useTheme } from '@mui/material'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import { DataGrid } from "@mui/x-data-grid"
@@ -10,9 +10,9 @@ import { RootState, AppDispatch } from 'src/store'
 import { dowUser, fetchData, upUser } from 'src/store/user'
 import { useSelector } from 'react-redux'
 import CustomChip from 'src/@core/components/mui/chip'
-import { UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
 import AddUser from 'src/views/pages/users/Register'
+import Can from 'src/layouts/components/acl/Can'
 
 interface UserRoleType {
     [key: string]: { icon: string; color: string }
@@ -27,7 +27,11 @@ interface GradeType {
     name: string
     _id: string
 }
-interface DefaultUserType {
+interface RoleType {
+    name: string
+    _id: string
+}
+interface UserType {
     name: string,
     lastName: string,
     gender: string,
@@ -39,11 +43,12 @@ interface DefaultUserType {
     grade: GradeType | null,
     otherGrade: string
     password: string,
-    rol: string[]
+    roles: RoleType[]
+    status?: string
     _id?: string
 }
 
-const defaultValues: DefaultUserType = {
+const defaultValues: UserType = {
     name: '',
     lastName: '',
     gender: '',
@@ -55,7 +60,7 @@ const defaultValues: DefaultUserType = {
     grade: null,
     otherGrade: '',
     password: '',
-    rol: []
+    roles: []
 }
 
 interface CellType {
@@ -68,8 +73,28 @@ const Users = () => {
     const [page, setPage] = useState<number>(0)
     const [drawOpen, setDrawOpen] = useState<boolean>(false)
     const [field, setField] = useState<string>('')
-    const [mode, setMode] = useState<'create' | 'edit'>('create')
-    const [userData, setUserData] = useState<DefaultUserType>(defaultValues)
+    const [mode, setMode] = useState<'create' | 'update'>('create')
+    const [userData, setUserData] = useState<UserType>(defaultValues)
+
+    const theme = useTheme()
+    const dispatch = useDispatch<AppDispatch>()
+    const store = useSelector((state: RootState) => state.user)
+
+    const toggleDrawer = () => setDrawOpen(!drawOpen)
+
+    useEffect(() => {
+        dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
+    }, [pageSize, page])
+
+    const handleCreate = () => {
+        setMode('create')
+        setUserData(defaultValues)
+        toggleDrawer()
+    }
+
+    const handleFilters = (field: string) => {
+        dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
+    }
 
     const columns = [
         {
@@ -79,7 +104,11 @@ const Users = () => {
             headerName: 'Grado',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography variant='body2'>{row.grade?.name}</Typography>
+                    <Tooltip title={row.grade ? row.grade.name : row.otherGrade || 'Ninguno'}>
+                        <Typography variant='body2' noWrap>
+                            {row.grade ? row.grade.name : row.otherGrade || 'Ninguno'}
+                        </Typography>
+                    </Tooltip>
                 )
             }
         },
@@ -90,7 +119,9 @@ const Users = () => {
             headerName: 'Nombres',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography variant='body2'>{row.name}</Typography>
+                    <Tooltip title={row.name}>
+                        <Typography variant='body2' noWrap>{row.name}</Typography>
+                    </Tooltip>
                 )
             }
         },
@@ -101,7 +132,9 @@ const Users = () => {
             headerName: 'Apellidos',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography variant='body2'>{row.lastName}</Typography>
+                    <Tooltip title={row.lastName}>
+                        <Typography variant='body2' noWrap>{row.lastName}</Typography>
+                    </Tooltip>
                 )
             }
         },
@@ -113,7 +146,9 @@ const Users = () => {
             headerName: 'CI',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography variant='body2' noWrap>{row.ci}</Typography>
+                    <Tooltip title={row.ci}>
+                        <Typography variant='body2' noWrap>{row.ci}</Typography>
+                    </Tooltip>
                 )
             }
         },
@@ -124,7 +159,9 @@ const Users = () => {
             headerName: 'Expedido',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography variant='body2'>{row.exp}</Typography>
+                    <Tooltip title={row.exp}>
+                        <Typography variant='body2'>{row.exp}</Typography>
+                    </Tooltip>
                 )
             }
         },
@@ -136,7 +173,9 @@ const Users = () => {
             headerName: 'Dirección',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography variant='body2' noWrap>{row.address}</Typography>
+                    <Tooltip title={row.address}>
+                        <Typography variant='body2' noWrap>{row.address}</Typography>
+                    </Tooltip>
                 )
             }
         },
@@ -148,7 +187,9 @@ const Users = () => {
             headerName: 'Celular',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography noWrap variant='body2'>{row.phone}</Typography>
+                    <Tooltip title={row.phone}>
+                        <Typography noWrap variant='body2'>{row.phone}</Typography>
+                    </Tooltip>
                 )
             }
         },
@@ -160,7 +201,9 @@ const Users = () => {
             headerName: 'Género',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography noWrap variant='body2'>{row.gender}</Typography>
+                    <Tooltip title={row.gender}>
+                        <Typography noWrap variant='body2'>{row.gender}</Typography>
+                    </Tooltip>
                 )
             }
         },
@@ -172,7 +215,9 @@ const Users = () => {
             headerName: 'email',
             renderCell: ({ row }: CellType) => {
                 return (
-                    <Typography noWrap variant='body2'>{row.email}</Typography>
+                    <Tooltip title={row.email}>
+                        <Typography noWrap variant='body2'>{row.email}</Typography>
+                    </Tooltip>
                 )
             }
         },
@@ -188,10 +233,10 @@ const Users = () => {
                     gap: 0.5,
                     py: 1,
                 }}>
-                    {row.rol.length === 0 ? (
+                    {row.roles?.length === 0 ? (
                         <Typography variant='body2'>Ninguno</Typography>
                     ) : (
-                        row.rol.map((rol) => (
+                        row.roles?.map?.((rol) => (
                             <Box
                                 key={rol.name}
                                 sx={{
@@ -250,6 +295,7 @@ const Users = () => {
             }
         }
     ]
+
     const RowOptions = ({ user }: { user: UserType }) => {
 
         const dispatch = useDispatch<AppDispatch>()
@@ -269,9 +315,9 @@ const Users = () => {
                 title: `¿Estas seguro dar de baja a ${user.name} ${user.lastName}?`,
                 icon: "warning",
                 showCancelButton: true,
-                cancelButtonColor: "#3085d6",
+                cancelButtonColor: theme.palette.info.main,
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#ff4040',
+                confirmButtonColor: theme.palette.error.main,
                 confirmButtonText: 'Dar de baja',
             }).then((result) => { return result.isConfirmed });
             if (confirme) {
@@ -285,9 +331,9 @@ const Users = () => {
                 title: `¿Estas seguro de reincorporar ${user.name} ${user.lastName}?`,
                 icon: "warning",
                 showCancelButton: true,
-                cancelButtonColor: "#3085d6",
+                cancelButtonColor: theme.palette.info.main,
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#72E128',
+                confirmButtonColor: theme.palette.success.main,
                 confirmButtonText: 'reincorporar',
             }).then((result) => { return result.isConfirmed });
             if (confirme) {
@@ -296,15 +342,12 @@ const Users = () => {
         }
 
         const handleEdit = () => {
-            const rol = user.rol?.map(role => role._id) || [];
-
             setUserData({
                 ...user,
-                rol,
                 otherGrade: ''
             });
 
-            setMode('edit');
+            setMode('update');
             setAnchorEl(null);
             toggleDrawer();
         };
@@ -330,19 +373,25 @@ const Users = () => {
                     }}
                     PaperProps={{ style: { minWidth: '8rem' } }}
                 >
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleEdit}>
-                        <Icon icon='mdi:pencil-outline' fontSize={20} color='#00a0f4' />
-                        Editar
-                    </MenuItem>
-                    {user.status === 'activo' ?
-                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleDow}>
-                            <Icon icon='mdi:arrow-down-thick' fontSize={20} color='#ff4040' />
-                            Dar de baja
-                        </MenuItem> :
-                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleUp}>
-                            <Icon icon='mdi:arrow-up-thick' fontSize={20} color='#72E128' />
-                            Reincorporar
+                    <Can I="update" a="users">
+                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleEdit}>
+                            <Icon icon='mdi:pencil-outline' fontSize={20} color={theme.palette.info.main} />
+                            Editar
                         </MenuItem>
+                    </Can>
+                    {user.status === 'activo' ?
+                        <Can I='dow' a='users'>
+                            <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleDow}>
+                                <Icon icon='mdi:arrow-down-thick' fontSize={20} color={theme.palette.error.main} />
+                                Dar de baja
+                            </MenuItem>
+                        </Can> :
+                        <Can I='up' a='users'>
+                            <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleUp}>
+                                <Icon icon='mdi:arrow-up-thick' fontSize={20} color={theme.palette.success.main} />
+                                Reincorporar
+                            </MenuItem>
+                        </Can>
                     }
 
                 </Menu>
@@ -350,24 +399,6 @@ const Users = () => {
         )
     }
 
-    const dispatch = useDispatch<AppDispatch>()
-
-    const store = useSelector((state: RootState) => state.user)
-    useEffect(() => {
-        dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
-    }, [pageSize, page])
-
-    const handleCreate = () => {
-        setMode('create')
-        setUserData(defaultValues)
-        toggleDrawer()
-    }
-
-
-    const toggleDrawer = () => setDrawOpen(!drawOpen)
-    const handleFilters = (field: string) => {
-        dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
-    }
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>
@@ -424,15 +455,17 @@ const Users = () => {
                                     Todos
                                 </Button>
                             </Box>
-                            <Button
-                                onClick={handleCreate}
-                                variant="contained"
-                                color='success'
-                                startIcon={<Icon icon='mdi:add' />}
-                                sx={{ p: 3.5 }}
-                            >
-                                Nuevo usuario
-                            </Button>
+                            <Can I="create" a="users">
+                                <Button
+                                    onClick={handleCreate}
+                                    variant="contained"
+                                    color='success'
+                                    startIcon={<Icon icon='mdi:add' />}
+                                    sx={{ p: 3.5 }}
+                                >
+                                    Nuevo usuario
+                                </Button>
+                            </Can>
                         </Box>
                     </Box>
                     <Box sx={{ p: 5 }}>
@@ -470,15 +503,18 @@ const Users = () => {
                     />
                 </Card>
             </Grid>
-            <AddDraw open={drawOpen} toggle={toggleDrawer} title={mode === 'create' ? 'Registro del usuario' : 'Editar usuario'}>
-                <AddUser
-                    toggle={toggleDrawer}
-                    page={page}
-                    pageSize={pageSize}
-                    defaultValues={userData}
-                    mode={mode}
-                />
-            </AddDraw>
+            <Can I={mode} a="users">
+                <AddDraw open={drawOpen} toggle={toggleDrawer} title={mode === 'create' ? 'Registro del usuario' : 'Editar usuario'}>
+                    <AddUser
+                        toggle={toggleDrawer}
+                        page={page}
+                        pageSize={pageSize}
+                        defaultValues={userData}
+                        mode={mode}
+                        open={drawOpen}
+                    />
+                </AddDraw>
+            </Can>
         </Grid>
     )
 }

@@ -18,8 +18,9 @@ import {
     Box,
 } from '@mui/material'
 import Icon from 'src/@core/components/icon'
-import { forwardRef, ReactElement, Ref, useState } from 'react'
+import { forwardRef, ReactElement, Ref, useEffect, useState } from 'react'
 import { styled } from '@mui/material/styles'
+import { instance } from 'src/configs/axios'
 
 interface SubCategory {
     _id?: string
@@ -38,7 +39,7 @@ interface ContableType {
 interface Props {
     open: boolean
     toggle: () => void
-    category: ContableType
+    id: string
 }
 
 const Transition = forwardRef(function Transition(
@@ -57,11 +58,28 @@ const Header = styled(Box)(({ theme }) => ({
     color: theme.palette.primary.contrastText,
 }))
 
-const SubCategory = ({ open, toggle, category }: Props) => {
+const SubCategory = ({ open, toggle, id }: Props) => {
     const [page, setPage] = useState(0)
     const [rowsPerPage, setRowsPerPage] = useState(10)
+    const [subcategories, setSubcategories] = useState<SubCategory[]>([])
+    const [category, setCategory] = useState<ContableType | null>(null)
 
-    const subcategories = category.subcategory || []
+
+    useEffect(() => {
+        const findOne = async () => {
+            try {
+                const response = await instance.get(`contables/${id}`)
+                setCategory(response.data ?? null);
+                setSubcategories(response.data.subcategory ?? []);
+            } catch (e) {
+                console.log(e)
+            }
+        }
+        if (open && id) {
+            findOne()
+        }
+    }, [open, id])
+
     const paginatedSubcategories = subcategories.slice(
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage
@@ -89,7 +107,7 @@ const SubCategory = ({ open, toggle, category }: Props) => {
         >
             <Header>
                 <Typography variant='h6' color={theme => theme.palette.primary.contrastText}>
-                    Sub Categorías de {category.name}
+                    Sub Categorías de {category?.name}
                 </Typography>
                 <IconButton
                     size='small'

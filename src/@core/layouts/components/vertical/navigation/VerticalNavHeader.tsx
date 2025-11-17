@@ -101,7 +101,7 @@ const VerticalNavHeader = (props: Props) => {
           onClick={toggleNavVisibility}
           sx={{ p: 0, backgroundColor: 'transparent !important' }}
         >
-          <Icon icon='mdi:close' fontSize={20} />
+          <Icon icon='mdi:close' fontSize={20} color={theme.palette.primary.contrastText} />
         </IconButton>
       ) : userMenuLockedIcon === null && userMenuUnlockedIcon === null ? null : (
         <IconButton

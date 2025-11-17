@@ -54,7 +54,7 @@ interface DevolucionType {
     grade: GradeType
     name: string
     lastName: string
-    user_en: UserType
+    user_rec: UserType
     activos: ActivosType[]
     documentUrl?: string
     description?: string

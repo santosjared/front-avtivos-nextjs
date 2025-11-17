@@ -8,15 +8,21 @@ interface Redux {
 }
 
 export const fetchData = createAsyncThunk('user/fetchUser',
-    async (filtrs?: { [key: string]: any }) => {
-        if (filtrs) {
+    async (filters?: { [key: string]: any }) => {
+        try {
             const response = await instance.get('/users', {
-                params: filtrs
+                params: filters
             })
             return response.data
+        } catch (e) {
+            console.log(e)
+            Swal.fire({
+                title: '¡Error!',
+                text: 'Se ha producido un error al intentar obtener los usuarios. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null;
         }
-        const response = await instance.get('/users')
-        return response.data
     }
 );
 
@@ -29,7 +35,7 @@ export const addUser = createAsyncThunk('user/addUser',
                 text: 'Datos guardados exitosamente',
                 icon: "success"
             });
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response
         } catch (e) {
             console.log(e)
@@ -51,7 +57,7 @@ export const updateUser = createAsyncThunk('user/updateUser',
                 text: 'Datos actualizados exitosamente',
                 icon: "success"
             });
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response
         } catch (e) {
             console.log(e)
@@ -73,7 +79,7 @@ export const dowUser = createAsyncThunk('user/dowUser',
                 text: 'Usuario dado de baja',
                 icon: "success"
             });
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response
         } catch (e) {
             console.log(e)
@@ -96,13 +102,14 @@ export const upUser = createAsyncThunk('user/upUser',
                 text: 'Usuario reincorporado',
                 icon: "success"
             });
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response
-        } catch (e) {
+        } catch (e: any) {
             console.log(e)
             Swal.fire({
                 title: '¡Error!',
-                text: 'Se ha producido un error al intentar reincorporar al usuario. Contacte al desarrollador del sistema para más asistencia.',
+                text: `Se ha producido un error al intentar reincorporar al usuario. 
+                Contacte al desarrollador del sistema para más asistencia. ${e.response?.status ? 'Código de estado: ' + e.response.status : ''} `,
                 icon: "error"
             });
         }
@@ -120,8 +127,8 @@ export const userSlice = createSlice({
     extraReducers: builder => {
         builder
             .addCase(fetchData.fulfilled, (state, action) => {
-                state.data = action.payload.result,
-                    state.total = action.payload.total
+                state.data = action.payload?.result || [],
+                    state.total = action.payload?.total || 0
             })
     }
 })

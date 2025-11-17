@@ -10,12 +10,12 @@ import Swal from 'sweetalert2'
 import { deleteEntrega, fetchData } from 'src/store/entrega'
 import { styled } from '@mui/material/styles'
 import Link from 'next/link'
-import Entrega from 'src/views/pages/borrowing/Entrega'
-import Confirmed from 'src/views/pages/borrowing/Confirmed'
 import getConfig from 'src/configs/environment'
-import { setSelectedIds } from 'src/store/borrowing'
-import { setData } from 'src/store/borrowing/register'
 import { useRouter } from 'next/router'
+import Register from 'src/views/pages/entregas/Register'
+import { instance } from 'src/configs/axios'
+import { PDFEntrega } from 'src/utils/PDF-entrega'
+import Can from 'src/layouts/components/acl/Can'
 
 interface LocationType {
     _id: string
@@ -80,12 +80,9 @@ interface EntregaType {
     code: string
     date: string
     time: string
-    grade: GradeType
-    name: string
-    lastName: string
-    user_en: UserType
+    user_en: UserType | null
+    user_rec: UserType | null
     location: LocationType
-    activos: ActivosType[]
     documentUrl?: string
     description?: string
 }
@@ -109,11 +106,11 @@ const Borrowing = () => {
     const [pageSize, setPageSize] = useState<number>(10)
     const [page, setPage] = useState<number>(0)
     const [field, setField] = useState<string>('')
-    const [step, setStep] = useState<'borrowing' | 'add' | 'confirmed'>('borrowing')
-    const [register, setRegister] = useState<RegisterType | null>(null)
-    const [activos, setActivos] = useState<ActivosType[]>([])
-    const [mode, setMode] = useState<'create' | 'edit'>('create')
+    const [mode, setMode] = useState<'create' | 'update'>('create')
     const [id, setId] = useState<string>('')
+    const [openRegiser, setOpenRegister] = useState<boolean>(false)
+
+    const toggleRegister = () => setOpenRegister(!openRegiser)
 
     const dispatch = useDispatch<AppDispatch>()
 
@@ -122,10 +119,9 @@ const Borrowing = () => {
         dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
     }, [pageSize, page])
 
-    const handleFilters = () => {
+    const handleFilters = (field: string) => {
         dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
     }
-
     const columns = [
         {
             flex: 0.09,
@@ -190,7 +186,7 @@ const Borrowing = () => {
             sortable: false,
             headerName: 'Usuario que recibe',
             renderCell: ({ row }: CellType) => {
-                const fullname = `${row.grade?.name || ''} ${row.name || ''} ${row.lastName || ''}`
+                const fullname = `${row.user_rec?.grade?.name || ''} ${row.user_rec?.name || ''} ${row.user_rec?.lastName || ''}`
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -292,30 +288,27 @@ const Borrowing = () => {
             }
         }
 
-        const handleUp = async () => {
+        const print = async () => {
             setAnchorEl(null)
+            try {
+                const res = await instance.get(`/entregas/${entrega._id}`)
+                const { activos, ...rest } = res.data
+                PDFEntrega(rest || null, activos || [])
+            } catch (e) {
+                console.log(e);
+                Swal.fire({
+                    title: '¡Error!',
+                    text: 'Se ha producido un error al intentar imprimir la entrega. Contacte al desarrollador del sistema para más asistencia.',
+                    icon: "error"
+                });
+            }
         }
 
-
         const handleEdit = () => {
-            const select = entrega.activos.map(activo => activo._id)
-            const defaultvalue = {
-                date: entrega.date,
-                time: entrega.time,
-                grade: entrega.grade,
-                name: entrega.name,
-                lastName: entrega.lastName,
-                location: entrega.location,
-                description: entrega.description,
-                otherLocation: '',
-                otherGrade: ''
-            }
-            dispatch(setSelectedIds(select));
-            dispatch(setData(defaultvalue))
             setId(entrega._id || '');
-            setMode('edit');
-            setStep('add');
+            setMode('update');
             setAnchorEl(null);
+            toggleRegister()
         }
 
         return (
@@ -338,152 +331,145 @@ const Borrowing = () => {
                     }}
                     PaperProps={{ style: { minWidth: '8rem' } }}
                 >
-                    {/* <Can I='update' a='users'> */}
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleEdit}>
-                        <Icon icon='mdi:pencil-outline' fontSize={20} color={theme.palette.info.main} />
-                        Editar
-                    </MenuItem>
-                    {/* </Can> */}
-                    {/* <Can I='delete' a='users'> */}
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleDow}>
-                        <Icon icon='mdi:delete' fontSize={20} color={theme.palette.error.main} />
-                        Eliminar
-                    </MenuItem>
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={() => router.push(`/devolver/${entrega._id}`)}>
-                        <Icon icon='mdi:clipboard-arrow-up' fontSize={20} color={theme.palette.success.main} />
-                        devolver
-                    </MenuItem>
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleUp}>
-                        <Icon icon='mdi:printer' fontSize={20} color={theme.palette.error.main} />
-                        generar pdf
-                    </MenuItem>
-                    {/* </Can> */}
-
+                    <Can I='update' a='entrega'>
+                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleEdit}>
+                            <Icon icon='mdi:pencil-outline' fontSize={20} color={theme.palette.info.main} />
+                            Editar
+                        </MenuItem>
+                    </Can>
+                    <Can I='delete' a='entrega'>
+                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleDow}>
+                            <Icon icon='mdi:delete' fontSize={20} color={theme.palette.error.main} />
+                            Eliminar
+                        </MenuItem>
+                    </Can>
+                    <Can I='create' a='devolucion'>
+                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={() => router.push(`/devolver/${entrega._id}`)}>
+                            <Icon icon='mdi:clipboard-arrow-up' fontSize={20} color={theme.palette.success.main} />
+                            devolver
+                        </MenuItem>
+                    </Can>
+                    <Can I='print' a='entrega'>
+                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={print}>
+                            <Icon icon='mdi:printer' fontSize={20} color={theme.palette.error.main} />
+                            generar pdf
+                        </MenuItem>
+                    </Can>
                 </Menu>
             </>
         )
     }
-    const StepBorrowing = () => {
-        return (
-            <Grid container spacing={6}>
-                <Grid item xs={12}>
-                    <Card>
-                        <Box sx={{ p: 5, pb: 0 }}>
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: { xs: 'column', sm: 'row' },
-                                    alignItems: { xs: 'stretch', sm: 'center' },
-                                    flexWrap: 'nowrap',
-                                    gap: 10,
-                                    width: '100%',
-                                }}
-                            >
-                                <Box sx={{ display: 'flex', flex: 1 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Buscar"
-                                        variant="outlined"
-                                        name="search"
-                                        autoComplete="off"
-                                        value={field}
-                                        onChange={(e) => setField(e.target.value)}
-                                        sx={{
-                                            flex: 1,
-                                            '& .MuiInputBase-root': {
-                                                borderTopRightRadius: 0,
-                                                borderBottomRightRadius: 0,
-                                            }
-                                        }}
-                                    />
 
-                                    <Button
-                                        variant="outlined"
-                                        onClick={handleFilters}
-                                        startIcon={<Icon icon='mdi:search' />}
-                                        sx={{
-                                            borderRadius: 0,
-                                            borderLeft: 1
-                                        }}
-                                    >
-                                        Buscar
-                                    </Button>
-
-                                    <Button
-                                        variant="contained"
-                                        sx={{
-                                            borderTopLeftRadius: 0,
-                                            borderBottomLeftRadius: 0
-                                        }}
-                                    >
-                                        Todos
-                                    </Button>
-                                </Box>
-                                <Button
-                                    onClick={() => setStep('add')}
-                                    variant="contained"
-                                    color='success'
-                                    startIcon={<Icon icon='mdi:add' />}
-                                    sx={{ p: 3.5 }}
-                                >
-                                    Nuevo entrega
-                                </Button>
-                            </Box>
-                        </Box>
-                        <Box sx={{ p: 5 }}>
-                            <Typography variant='subtitle2'>
-                                Lista de entregados
-                            </Typography>
-                        </Box>
-                        <DataGrid
-                            autoHeight
-                            rows={store.data}
-                            columns={columns}
-                            getRowId={(row: any) => row._id}
-                            pagination
-                            pageSize={pageSize}
-                            disableSelectionOnClick
-                            onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                            rowsPerPageOptions={[10, 25, 50]}
-                            rowCount={store.total}
-                            paginationMode="server"
-                            onPageChange={(newPage) => setPage(newPage)}
-                            sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
-                            localeText={{
-                                MuiTablePagination: {
-                                    labelRowsPerPage: 'Filas por página:',
-                                },
-                            }
-                            }
-                        />
-                    </Card>
-                </Grid>
-            </Grid>
-        )
-    }
-    switch (step) {
-        case 'borrowing': return (<StepBorrowing />)
-        case 'add': return (<Entrega
-            setStep={setStep}
-            setActivos={setActivos}
-            setRegister={setRegister}
-            mode={mode}
-            setId={setId}
-            id={id}
-        />)
-        case 'confirmed': return (
-            <Confirmed
-                setStep={setStep}
-                setActivos={setActivos}
-                activos={activos}
-                register={register}
-                page={page}
-                limit={pageSize}
+    return (
+        <>{
+            openRegiser ? <Register
+                open={openRegiser}
+                toggle={toggleRegister}
                 mode={mode}
+                limit={pageSize}
+                page={page}
                 id={id}
-            />)
-        default: return (<StepBorrowing />)
-    }
+            /> :
+                (<Grid container spacing={6}>
+                    <Grid item xs={12}>
+                        <Card>
+                            <Box sx={{ p: 5, pb: 0 }}>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: { xs: 'column', sm: 'row' },
+                                        alignItems: { xs: 'stretch', sm: 'center' },
+                                        flexWrap: 'nowrap',
+                                        gap: 10,
+                                        width: '100%',
+                                    }}
+                                >
+                                    <Box sx={{ display: 'flex', flex: 1 }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Buscar"
+                                            variant="outlined"
+                                            name="search"
+                                            autoComplete="off"
+                                            value={field}
+                                            onChange={(e) => setField(e.target.value)}
+                                            sx={{
+                                                flex: 1,
+                                                '& .MuiInputBase-root': {
+                                                    borderTopRightRadius: 0,
+                                                    borderBottomRightRadius: 0,
+                                                }
+                                            }}
+                                        />
+
+                                        <Button
+                                            variant="outlined"
+                                            onClick={() => handleFilters(field)}
+                                            startIcon={<Icon icon='mdi:search' />}
+                                            sx={{
+                                                borderRadius: 0,
+                                                borderLeft: 1
+                                            }}
+                                        >
+                                            Buscar
+                                        </Button>
+
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => handleFilters('')}
+                                            sx={{
+                                                borderTopLeftRadius: 0,
+                                                borderBottomLeftRadius: 0
+                                            }}
+                                        >
+                                            Todos
+                                        </Button>
+                                    </Box>
+                                    <Can I='create' a='entrega'>
+                                        <Button
+                                            onClick={toggleRegister}
+                                            variant="contained"
+                                            color='success'
+                                            startIcon={<Icon icon='mdi:add' />}
+                                            sx={{ p: 3.5 }}
+                                        >
+                                            Nuevo entrega
+                                        </Button>
+                                    </Can>
+                                </Box>
+                            </Box>
+                            <Box sx={{ p: 5 }}>
+                                <Typography variant='subtitle2'>
+                                    Lista de entregados
+                                </Typography>
+                            </Box>
+                            <DataGrid
+                                autoHeight
+                                rows={store.data}
+                                columns={columns}
+                                getRowId={(row: any) => row._id}
+                                pagination
+                                pageSize={pageSize}
+                                disableSelectionOnClick
+                                onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                                rowsPerPageOptions={[10, 25, 50]}
+                                rowCount={store.total}
+                                paginationMode="server"
+                                onPageChange={(newPage) => setPage(newPage)}
+                                sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
+                                localeText={{
+                                    MuiTablePagination: {
+                                        labelRowsPerPage: 'Filas por página:',
+                                    },
+                                }
+                                }
+                            />
+                        </Card>
+                    </Grid>
+                </Grid>)}
+        </>
+    )
+
 }
 Borrowing.acl = {
     action: 'read',

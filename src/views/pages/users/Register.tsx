@@ -1,8 +1,8 @@
-import { Box, Button, Checkbox, FormControl, FormHelperText, Grid, IconButton, InputAdornment, ListItemText, OutlinedInput, TextField, Typography, useTheme } from "@mui/material"
+import { Box, Button, Checkbox, CircularProgress, FormControl, FormHelperText, Grid, IconButton, InputAdornment, ListItemText, OutlinedInput, TextField, Typography, useTheme } from "@mui/material"
 import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Icon from 'src/@core/components/icon'
 import * as yup from 'yup'
 import { useDispatch } from 'react-redux';
@@ -29,41 +29,58 @@ interface GradeType {
     name: string
     _id: string
 }
-
+interface RoleType {
+    name: string
+    _id: string
+}
 interface DefaultUserType {
     name: string,
     lastName: string,
     gender: string,
     email: string,
-    grade: GradeType | null,
-    otherGrade: string
     ci: string,
-    exp: string
     phone: string,
     address: string,
+    exp: string,
+    grade: GradeType | null,
+    otherGrade: string
     password: string,
-    rol: string[]
+    roles: RoleType[]
+    status?: string
     _id?: string
-    __v?: string
 }
 
 interface Props {
     toggle: () => void;
     page: number;
     pageSize: number;
-    mode?: 'create' | 'edit';
+    mode?: 'create' | 'update';
+    open?: boolean;
     defaultValues?: DefaultUserType;
 }
 
 
-const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Props) => {
+const AddUser = ({ toggle, page, pageSize, mode = 'create', open, defaultValues }: Props) => {
 
 
     const [showPassword, setShowPassword] = useState(false)
     const [roles, setRoles] = useState<Rol[]>([])
     const [grades, setGrades] = useState<GradeType[]>([])
+    const [pageScrollGrade, setPageScrollGrade] = useState(0)
+    const [pageScrollRole, setPageScrollRole] = useState(0)
+    const [totalGrades, setTotalGrades] = useState(0)
+    const [totalRoles, setTotalRoles] = useState(0)
+    const [loadingGrades, setLoadingGrades] = useState(false)
+    const [loadingRoles, setLoadingRoles] = useState(false)
+
+    const pageSizeScroll = 10
+
+    const observerRef = useRef<HTMLDivElement | null>(null);
+    const observerGrade = useRef<HTMLDivElement | null>(null);
+
 
     const checkemail = defaultValues?.email
+    const checkCi = defaultValues?.ci
 
     const schema = yup.object().shape({
         grade: yup
@@ -72,11 +89,11 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
                 name: yup.string().required('El campo grado es requerido'),
             })
             .nullable()
-            .default(null)
             .required('Debe seleccionar un grado'),
 
         otherGrade: yup
             .string()
+            .trim()
             .when('grade', {
                 is: (val: unknown) => (val as GradeType)?.name === 'Otro',
                 then: schema =>
@@ -89,6 +106,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
 
         name: yup
             .string()
+            .trim()
             .required('El campo nombres es requerido')
             .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El nombre solo debe contener letras')
             .min(4, 'El campo nombres debe tener al menos 4 caracteres')
@@ -96,6 +114,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
 
         lastName: yup
             .string()
+            .trim()
             .required('El campo apellidos es requerido')
             .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'El campo apellido solo debe contener letras')
             .min(4, 'El campo apellidos debe tener al menos 4 caracteres')
@@ -103,19 +122,23 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
 
         email: yup
             .string()
+            .trim()
             .email('El correo electrónico debe ser un correo electrónico válido')
             .required('El campo correo electrónico es requerido')
             .max(100, 'El campo correo electrónico no debe tener más de 100 caracteres'),
 
         ci: yup
             .string()
+            .trim()
             .required('El campo CI es requerido')
             .min(4, 'El campo CI debe tener al menos 4 caracteres')
             .max(20, 'El campo CI no debe tener más de 20 caracteres'),
 
         exp: yup
             .string()
+            .trim()
             .required('Seleccione la expedición del carnet')
+            .min(2, 'El campo expedición debe tener al menos 2 caracteres')
             .max(20, 'El campo expedición no debe tener más de 20 caracteres'),
 
         phone: yup
@@ -128,6 +151,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
 
         address: yup
             .string()
+            .trim()
             .min(3, 'El campo dirección debe tener al menos 3 caracteres')
             .max(100, 'El campo dirección no debe tener más de 100 caracteres')
             .required('El campo dirección es requerido'),
@@ -135,11 +159,13 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
         password: mode === 'create'
             ? yup
                 .string()
+                .trim()
                 .min(8, 'La contraseña debe tener al menos 8 caracteres')
                 .max(32, 'La contraseña no debe tener más de 32 caracteres')
                 .required('El campo contraseña es requerido')
             : yup
                 .string()
+                .trim()
                 .transform(value => (value === '' ? undefined : value))
                 .min(8, 'El campo contraseña debe tener al menos 8 caracteres')
                 .max(32, 'La contraseña no debe tener más de 32 caracteres')
@@ -147,42 +173,107 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
 
         gender: yup
             .string()
+            .trim()
             .required('Debe seleccionar algún sexo')
+            .min(2, 'El campo sexo debe tener al menos 2 caracteres')
             .max(10, 'El campo sexo no debe tener más de 10 caracteres'),
-
-        rol: yup
+        roles: yup
             .array()
+            .of(
+                yup.object({
+                    _id: yup.string().required(),
+                    name: yup.string().required(),
+                })
+            )
             .min(1, 'Debe seleccionar al menos un rol')
             .max(5, 'No puede seleccionar más de 5 roles')
-            .required('Debe seleccionar al menos un rol'),
+            .required('Debe seleccionar al menos un rol')
+            .nullable(),
+
     });
+
     const dispatch = useDispatch<AppDispatch>()
     const theme = useTheme()
 
-    useEffect(() => {
-        const fetchRol = async () => {
-            try {
-                const response = await instance.get('/roles');
-                setRoles(response.data.result);
-            } catch (e) {
-                console.log(e)
-            }
+    const fetchRol = async () => {
 
+        if (loadingRoles) return;
+        setLoadingRoles(true);
+
+        try {
+            const response = await instance.get('/roles', {
+                params: {
+                    skip: pageScrollRole * pageSizeScroll,
+                    limit: pageSizeScroll
+                }
+            });
+            setRoles(prevRoles => [...prevRoles, ...response.data?.result || []]);
+            setTotalRoles(response.data?.total || 0);
+            setPageScrollRole(prevPage => prevPage + 1);
+        } catch (e) {
+            console.log(e)
+        } finally {
+            setLoadingRoles(false);
         }
+
+    }
+
+    const fetchGrade = async () => {
+        if (loadingGrades) return;
+        setLoadingGrades(true);
+        try {
+            const response = await instance.get('/users/grades', {
+                params: {
+                    skip: pageScrollGrade * pageSizeScroll,
+                    limit: pageSizeScroll
+                }
+            });
+            setGrades(prevGrades => {
+                const newGrades = response.data?.result || [];
+                const gradesWithoutOther = prevGrades.filter(g => g._id !== 'Other');
+                return [...gradesWithoutOther, ...newGrades, { name: 'Otro', _id: 'Other' }];
+            });
+            setTotalGrades(response.data?.total || 0);
+            setPageScrollGrade(prevPage => prevPage + 1);
+        } catch (error) {
+            console.log('error al solicitar grados', error)
+        } finally {
+            setLoadingGrades(false);
+        }
+    }
+
+    useEffect(() => {
         fetchRol();
-    }, [mode, page, pageSize, defaultValues]);
+    }, []);
+    useEffect(() => {
+        if (open) {
+            fetchGrade();
+        }
+    }, [open])
 
     useEffect(() => {
-        const fetch = async () => {
-            try {
-                const response = await instance.get('/users/grades')
-                setGrades([...response.data, { name: 'Otro', _id: 'Other' }])
-            } catch (error) {
-                console.log('error al solicitar grados', error)
+        if (!observerRef.current) return;
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && roles.length < totalRoles) {
+                fetchRol();
             }
-        }
-        fetch()
-    }, [mode, page, pageSize, defaultValues, toggle])
+        }, { threshold: 1 });
+        observer.observe(observerRef.current);
+
+        return () => observer.disconnect();
+    }, [roles, totalRoles]);
+
+    useEffect(() => {
+        if (!observerGrade.current) return;
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && grades.length < totalGrades) {
+                fetchGrade();
+            }
+        }, { threshold: 1 });
+        observer.observe(observerGrade.current);
+        return () => observer.disconnect();
+    }, [grades, totalGrades]);
+
 
     const {
         reset,
@@ -203,15 +294,14 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
         reset(defaultValues)
     }, [defaultValues, mode])
 
-
     const onSubmit = async (data: DefaultUserType) => {
-
         try {
             const newData = {
                 ...data,
+                roles: data.roles.map((role) => role._id),
                 grade: data.grade?._id
             }
-            if (mode === 'edit' && defaultValues?._id) {
+            if (mode === 'update' && defaultValues?._id) {
                 if (data.email !== checkemail) {
                     const check = await instance.get(`/users/check-email/${data.email}`);
                     if (check.data) {
@@ -222,10 +312,21 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
                         return;
                     }
                 }
+                if (data.ci !== checkCi) {
+                    const checkCiResponse = await instance.get(`/users/check-ci/${data.ci}`);
+                    if (checkCiResponse.data) {
+                        setError('ci', {
+                            type: 'manual',
+                            message: 'Este CI ya está registrado'
+                        });
+                        return;
+                    }
+                }
                 delete newData._id
-                dispatch(updateUser({ data: newData, id: defaultValues._id, filtrs: { skip: page * pageSize, limit: pageSize } }))
+                dispatch(updateUser({ data: newData, id: defaultValues._id, filters: { skip: page * pageSize, limit: pageSize } }))
             } else {
                 const check = await instance.get(`/users/check-email/${data.email}`);
+                const checkCiResponse = await instance.get(`/users/check-ci/${data.ci}`);
                 if (check.data) {
                     setError('email', {
                         type: 'manual',
@@ -233,7 +334,14 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
                     });
                     return;
                 }
-                dispatch(addUser({ data: newData, filtrs: { skip: page * pageSize, limit: pageSize } }))
+                if (checkCiResponse.data) {
+                    setError('ci', {
+                        type: 'manual',
+                        message: 'Este CI ya está registrado'
+                    });
+                    return;
+                }
+                dispatch(addUser({ data: newData, filters: { skip: page * pageSize, limit: pageSize } }))
             }
         } catch (error) {
             console.error('Error al guardar usuario:', error);
@@ -276,11 +384,15 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
                                                 value={value._id || ''}
                                                 key={value._id}
                                             >{value.name}</MenuItem>))}
+                                            {loadingGrades && <MenuItem disabled>
+                                                <CircularProgress size={20} />
+                                            </MenuItem>}
                                         </Select>
                                     )}
                                 />
                                 {errors.grade && <FormHelperText sx={{ color: 'error.main' }}>{errors.grade?.message || errors.grade.name?.message || errors.grade._id?.message}</FormHelperText>}
                             </FormControl>
+                            <div ref={observerGrade}></div>
                         </Grid>
                         {otherGrade?.name == 'Otro' &&
                             <Grid item xs={6}>
@@ -527,50 +639,66 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Pro
                             <FormControl fullWidth sx={{ mb: 6 }}>
                                 <InputLabel id="role-select">Rol</InputLabel>
                                 <Controller
-                                    name="rol"
+                                    name="roles"
                                     control={control}
-                                    render={({ field }) => (
+                                    render={({ field: { value = [], onChange } }) => (
                                         <Select
-                                            {...field}
                                             labelId="role-select"
                                             id="select-role"
                                             multiple
+                                            value={value.map((rol) => rol._id)}
+                                            onChange={(e) => {
+                                                const {
+                                                    target: { value: selectedIds },
+                                                } = e;
+                                                const selectedRoles = roles.filter((role) =>
+                                                    selectedIds.includes(role._id)
+                                                );
+                                                onChange(selectedRoles);
+                                            }}
                                             input={<OutlinedInput id="select-role" label="Rol" />}
-                                            renderValue={(selected: any) => (
+                                            renderValue={(selectedIds: string[]) => (
                                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                    {
-                                                        roles.filter((r) => selected.includes(r._id)).map((r) => (
+                                                    {roles
+                                                        .filter((r) => selectedIds.includes(r._id))
+                                                        .map((r) => (
                                                             <Chip key={r._id} label={r.name} />
-                                                        ))
-                                                    }
+                                                        ))}
                                                 </Box>
                                             )}
                                             MenuProps={MenuProps}
-                                            error={Boolean(errors.rol)}
+                                            error={Boolean(errors.roles)}
                                         >
-                                            {roles.map((role: any) => (
+                                            {roles.map((role: RoleType) => (
                                                 <MenuItem key={role._id} value={role._id}>
-                                                    <Checkbox checked={field.value?.includes(role._id)} />
+                                                    <Checkbox
+                                                        checked={value.some((rol) => rol._id === role._id)}
+                                                    />
                                                     <ListItemText primary={role.name} />
                                                 </MenuItem>
                                             ))}
+                                            {loadingRoles && <MenuItem disabled>
+                                                <CircularProgress size={20} />
+                                            </MenuItem>}
                                         </Select>
                                     )}
                                 />
-                                {errors.rol && (
+                                {errors.roles && (
                                     <FormHelperText sx={{ color: 'error.main' }}>
-                                        {errors.rol.message}
+                                        {errors.roles.message}
                                     </FormHelperText>
                                 )}
+                                <div ref={observerRef}></div>
                             </FormControl>
                         </Grid>
+
                     </Grid>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Button size='large' variant='outlined' color='secondary' onClick={handleOnclickCancel} startIcon={<Icon icon='mdi:cancel-circle' />}>
+                        <Button size='large' variant='contained' color='error' onClick={handleOnclickCancel} startIcon={<Icon icon='mdi:cancel-circle' />}>
                             Cancelar
                         </Button>
-                        <Button size='large' type='submit' variant='contained' sx={{ mr: 3 }} startIcon={<Icon icon='mdi:content-save' />}>
-                            Guardar
+                        <Button size='large' type='submit' variant='contained' color="success" startIcon={<Icon icon='mdi:content-save' />}>
+                            {mode === 'create' ? 'Guardar' : 'Actualizar'}
                         </Button>
                     </Box>
                 </fieldset>

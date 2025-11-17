@@ -127,13 +127,13 @@ const Confirmar = ({ activos, register, toggle, close }: Props) => {
         }
 
         const formData = new FormData();
-
         formData.append('date', register?.date ?? '');
         formData.append('time', register?.time ?? '');
         formData.append('grade', register?.grade?._id ?? '');
         formData.append('name', register?.name.trim() ?? '');
         formData.append('lastName', register?.lastName.trim() ?? '');
-        formData.append('user_en', user?._id || '')
+        formData.append('user_rec', user?._id || '')
+        formData.append('code', register?.code.trim() ?? '');
 
         activos.forEach(activo => {
             if (activo._id) formData.append('activos[]', activo._id);

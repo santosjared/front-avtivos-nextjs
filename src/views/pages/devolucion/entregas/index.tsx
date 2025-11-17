@@ -1,5 +1,5 @@
 import React, { useState, useEffect, } from 'react'
-import { Box, Button, Card, Grid, TextField, Tooltip, Typography, useTheme } from '@mui/material'
+import { Box, Button, Card, Divider, Grid, IconButton, TextField, Tooltip, Typography, useTheme } from '@mui/material'
 import { DataGrid } from "@mui/x-data-grid"
 import { useDispatch } from 'react-redux'
 import Icon from 'src/@core/components/icon'
@@ -9,8 +9,9 @@ import { GradeType, UserType } from 'src/types/types'
 import { styled } from '@mui/material/styles'
 import Link from 'next/link'
 import getConfig from 'src/configs/environment'
-import { fetchDataEntrega } from 'src/store/devolucion'
 import { useRouter } from 'next/router'
+import { fetchData } from 'src/store/entrega'
+import Can from 'src/layouts/components/acl/Can'
 
 interface LocationType {
     _id: string
@@ -44,34 +45,18 @@ interface ResponsableType {
     lastName: string
 }
 
-interface ActivosType {
-    _id?: string
-    code: string,
-    responsable: ResponsableType | null,
-    name: string,
-    location: LocationType | null,
-    price_a: number,
-    date_a: string,
-    imageUrl: string | null,
-    status: StatusType | null
-    category: ContableType | null
-    subcategory: SubCategoryType | null
-}
-
 interface EntregaType {
     _id?: string
     code: string
     date: string
     time: string
-    grade: GradeType
-    name: string
-    lastName: string
-    user_en: UserType
+    user_en: UserType | null
+    user_rec: UserType | null
     location: LocationType
-    activos: ActivosType[]
     documentUrl?: string
     description?: string
 }
+
 
 interface CellType {
     row: EntregaType
@@ -101,13 +86,15 @@ const Entregas = ({ toggle }: Props) => {
 
     const router = useRouter()
 
-    const { entregas, totalEntregas } = useSelector((state: RootState) => state.devolucion)
+    const theme = useTheme()
+
+    const store = useSelector((state: RootState) => state.entrega)
     useEffect(() => {
-        dispatch(fetchDataEntrega({ skip: page * pageSize, limit: pageSize }))
+        dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
     }, [pageSize, page])
 
-    const handleFilters = () => {
-        dispatch(fetchDataEntrega({ field, skip: page * pageSize, limit: pageSize }))
+    const handleFilters = (field: string) => {
+        dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
     }
 
     const columns = [
@@ -174,7 +161,7 @@ const Entregas = ({ toggle }: Props) => {
             sortable: false,
             headerName: 'Usuario que recibe',
             renderCell: ({ row }: CellType) => {
-                const fullname = `${row.grade?.name || ''} ${row.name || ''} ${row.lastName || ''}`
+                const fullname = `${row.user_rec?.grade?.name || ''} ${row.user_rec?.name || ''} ${row.user_rec?.lastName || ''}`
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -255,9 +242,11 @@ const Entregas = ({ toggle }: Props) => {
                                 },
                             }}
                         >
-                            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                                Devolver
-                            </Box>
+                            <Can I='create' a='devolucion'>
+                                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                                    Devolver
+                                </Box>
+                            </Can>
                         </Button>
                     </Box>
                 )
@@ -269,6 +258,15 @@ const Entregas = ({ toggle }: Props) => {
         <Grid container spacing={6}>
             <Grid item xs={12}>
                 <Card>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2, pr: 2 }}>
+                        <Typography variant="h5" sx={{ pl: 2, pt: 2, color: theme.palette.text.secondary }}>ACTIVOS PRESTADOS</Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center', gap: 2 }}>
+                            <IconButton size='small' color="secondary" onClick={toggle}>
+                                <Icon icon='mdi:close' fontSize={20} />
+                            </IconButton>
+                        </Box>
+                    </Box>
+                    <Divider />
                     <Box sx={{ p: 5, pb: 0 }}>
                         <Box
                             sx={{
@@ -280,14 +278,6 @@ const Entregas = ({ toggle }: Props) => {
                                 width: '100%',
                             }}
                         >
-                            <Button
-                                variant="contained"
-                                onClick={toggle}
-                                sx={{ p: 3.5 }}
-                                startIcon={<Icon icon='ic:baseline-arrow-back-ios' />}
-                            >
-                                Atras
-                            </Button>
                             <Box sx={{ display: 'flex', flex: 1 }}>
                                 <TextField
                                     fullWidth
@@ -308,7 +298,7 @@ const Entregas = ({ toggle }: Props) => {
 
                                 <Button
                                     variant="outlined"
-                                    onClick={handleFilters}
+                                    onClick={() => handleFilters(field)}
                                     startIcon={<Icon icon='mdi:search' />}
                                     sx={{
                                         borderRadius: 0,
@@ -320,6 +310,7 @@ const Entregas = ({ toggle }: Props) => {
 
                                 <Button
                                     variant="contained"
+                                    onClick={() => handleFilters('')}
                                     sx={{
                                         borderTopLeftRadius: 0,
                                         borderBottomLeftRadius: 0
@@ -337,7 +328,7 @@ const Entregas = ({ toggle }: Props) => {
                     </Box>
                     <DataGrid
                         autoHeight
-                        rows={entregas}
+                        rows={store.data}
                         columns={columns}
                         getRowId={(row: any) => row._id}
                         pagination
@@ -345,7 +336,7 @@ const Entregas = ({ toggle }: Props) => {
                         disableSelectionOnClick
                         onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
                         rowsPerPageOptions={[10, 25, 50]}
-                        rowCount={totalEntregas}
+                        rowCount={store.total}
                         paginationMode="server"
                         onPageChange={(newPage) => setPage(newPage)}
                         sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}

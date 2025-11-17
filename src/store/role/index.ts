@@ -8,15 +8,21 @@ interface Redux {
 }
 
 export const fetchData = createAsyncThunk('rol/fetchRol',
-    async (filtrs?: { [key: string]: any }) => {
-        if (filtrs) {
+    async (filters?: { [key: string]: any }) => {
+        try {
             const response = await instance.get('/roles', {
-                params: filtrs
+                params: filters
             })
             return response.data
+        } catch (e) {
+            console.log(e)
+            Swal.fire({
+                title: '¡Error!',
+                text: 'Se ha producido un error al intentar traer los roles. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null
         }
-        const response = await instance.get('/roles')
-        return response.data
     }
 );
 
@@ -95,8 +101,8 @@ export const roleSlice = createSlice({
     extraReducers: builder => {
         builder
             .addCase(fetchData.fulfilled, (state, action) => {
-                state.data = action.payload.result,
-                    state.total = action.payload.total
+                state.data = action.payload?.result || [],
+                    state.total = action.payload?.total || 0
             })
     }
 })

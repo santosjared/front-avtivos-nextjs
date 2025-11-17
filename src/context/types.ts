@@ -2,8 +2,8 @@ import { GradeType } from "src/types/types"
 
 export type ErrCallbackType = (err: { [key: string]: string }) => void
 
-export type Actions = 'manage' | 'create' | 'read' | 'update' | 'delete'
-export type Subjects = 'all' | 'usuarios' | 'roles' | 'activos' | 'home' | 'entrega' | 'devolucion'
+export type Actions = 'create' | 'read' | 'update' | 'delete' | 'permissions' | 'details' | 'print' | 'calcular' | 'up' | 'dow'
+export type Subjects = 'dashboard' | 'users' | 'roles' | 'activos' | 'contable' | 'entrega' | 'devolucion' | 'bitacora' | 'depreciacion'
 
 export type LoginParams = {
   email: string
@@ -11,17 +11,9 @@ export type LoginParams = {
   rememberMe?: boolean
 }
 
-export type RegisterParams = {
-  email: string
-  username: string
-  password: string
-}
-
 export type Permission = {
   subject: Subjects
   action: Actions[]
-  _id?: string
-  __v?: string
 }
 
 export type Rol = {
@@ -29,16 +21,14 @@ export type Rol = {
   permissions: Permission[],
   description: string
   _id: string
-  __v?: string
 }
 
 export type UserDataType = {
-  rol: Rol[]
-  name: string,
-  lastName: string,
-  email: string,
+  roles: Rol[]
+  fullName: string
+  profile?: string
+  email: string
   rememberMe?: boolean
-  grade: GradeType
   _id?: string
 }
 

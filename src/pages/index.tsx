@@ -1,33 +1,37 @@
-import { useEffect } from 'react'
+import { useContext, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Spinner from 'src/@core/components/spinner'
-import navigation from 'src/navigation/vertical'
-import { buildAbilityFor } from 'src/configs/acl'
-import { useSelector } from 'react-redux'
-import { RootState } from 'src/store'
+import { AbilityContext } from 'src/layouts/components/acl/Can'
+import navigation from 'src/navigation'
+
+const getFirstAllowedRoute = (ability: any) => {
+  const items = navigation()
+
+  for (const item of items) {
+    if (ability?.can(item.action, item.subject)) {
+      return item.path
+    }
+  }
+
+  return null
+}
 
 const Home = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
   const router = useRouter()
+  const ability = useContext(AbilityContext)
+
   useEffect(() => {
-    if (!router.isReady) {
-      return
-    }
 
-    if (!user) return
+    if (!router.isReady || !ability) return
 
-    const ability = buildAbilityFor(user.rol)
-    if (!ability) return
-    const navItems = navigation()
-    const accessibleRoute: any = navItems.find(item => {
-      return ability.can('read', item.subject || '')
-    })
-    if (accessibleRoute) {
-      router.replace(accessibleRoute.path)
+    const route = getFirstAllowedRoute(ability)
+
+    if (route) {
+      router.replace(route)
     } else {
       router.replace('/acl')
     }
-  }, [user])
+  }, [router.isReady, ability])
 
   return <Spinner />
 }

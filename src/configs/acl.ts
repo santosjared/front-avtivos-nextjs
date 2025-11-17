@@ -6,7 +6,7 @@ export type Subjects = string
 
 export type ACLObj = {
   action: Actions
-  subject: string
+  subject: Subjects
 }
 
 export type AppAbility = MongoAbility<[Actions, Subjects]>;
@@ -14,7 +14,7 @@ export type AppAbility = MongoAbility<[Actions, Subjects]>;
 export const buildAbilityFor = (roles: Rol[]): AppAbility => {
   const { can, rules } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
-  const allPermissions = roles.flatMap((rol) => rol.permissions);
+  const allPermissions = roles?.flatMap?.((rol) => rol.permissions);
   const mergedPermission = mergePermissions(allPermissions);
 
   mergedPermission.forEach((permission) => {
@@ -29,6 +29,6 @@ export const buildAbilityFor = (roles: Rol[]): AppAbility => {
 };
 
 export const defaultACLObj: ACLObj = {
-  action: 'manage',
-  subject: 'all'
-};
+  action: 'read',
+  subject: 'acl'
+}

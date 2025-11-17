@@ -1,5 +1,5 @@
-import { Autocomplete, Box, Button, FormControl, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Select, TextField, Typography, useTheme } from "@mui/material"
-import { useEffect, useState } from "react"
+import { Autocomplete, Box, Button, CircularProgress, FormControl, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Select, TextField, Typography, useTheme } from "@mui/material"
+import { useCallback, useEffect, useState } from "react"
 import Icon from 'src/@core/components/icon'
 import * as yup from 'yup'
 import { useDispatch } from 'react-redux';
@@ -9,6 +9,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { addActivos, updateActivos } from "src/store/activos";
 import { instance } from "src/configs/axios";
 import baseUrl from 'src/configs/environment'
+import { debounce } from "lodash";
 
 interface SubCategoryType {
     _id?: string
@@ -64,24 +65,46 @@ interface ActivosType {
     description: string
 }
 
+const today = new Date().toISOString().split('T')[0]
+
+const defaultValues: ActivosType = {
+    code: '',
+    responsable: null,
+    name: '',
+    location: null,
+    price_a: 0,
+    date_a: today,
+    image: null,
+    imageUrl: '',
+    status: null,
+    otherStatus: '',
+    category: null,
+    subcategory: null,
+    otherLocation: '',
+    description: ''
+}
+
 interface Props {
     toggle: () => void;
+    open: boolean
     page: number;
     pageSize: number;
-    mode?: 'create' | 'edit';
-    defaultValues?: ActivosType;
+    mode?: 'create' | 'update';
+    id: string;
 }
 
 
 const schema = yup.object().shape({
     code: yup
         .string()
+        .trim()
         .required('El campo código es requerido')
         .min(4, 'El campo código debe tener al menos 4 caracteres')
         .max(16, 'El campo código no debe exceder 16 caracteres'),
 
     name: yup
         .string()
+        .trim()
         .required('El campo nombre es requerido')
         .min(2, 'El campo nombre debe tener al menos 2 caracteres')
         .max(50, 'El campo nombre no debe exceder mas de 50 caracteres'),
@@ -131,7 +154,8 @@ const schema = yup.object().shape({
             _id: yup.string().required('Seleccione una categoría del activo'),
             name: yup.string().required('Seleccione una categoría del activo')
         })
-        .required('Seleccione una categoría del activo'),
+        .required('Seleccione una categoría del activo')
+        .nullable(),
     subcategory: yup
         .object()
         .notRequired()
@@ -142,7 +166,8 @@ const schema = yup.object().shape({
             _id: yup.string().required('Seleccione un estado del activo'),
             name: yup.string().required('Seleccione un estado del activo')
         })
-        .required('Seleccione un estado del activo'),
+        .required('Seleccione un estado del activo')
+        .nullable(),
 
     otherStatus: yup
         .string()
@@ -166,76 +191,202 @@ const schema = yup.object().shape({
         .nullable(),
     description: yup
         .string()
-        .transform(value => (value?.trim() === '' ? undefined : value))
-        .min(10, 'La descripción debe tener al menos 10 caracteres')
+        .transform(value => value === undefined || value === null ? '' : value)
+        .test('empty-or-valid', 'La descripción debe tener al menos 10 caracteres', value => {
+            if (!value) return true
+            return value.trim().length >= 10
+        })
         .max(1000, 'La descripción no debe superar los 1000 caracteres')
-        .notRequired()
 })
 
 
 
-const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Props) => {
+const AddActivos = ({ toggle, page, pageSize, mode = 'create', id, open }: Props) => {
 
-    const [imagePrev, setImagePre] = useState<string | null>(defaultValues?.imageUrl || null)
+    const [imagePrev, setImagePre] = useState<string | null>(defaultValues.imageUrl)
     const [category, setCategory] = useState<ContableType[]>([])
     const [status, setStatus] = useState<StatusType[]>([])
     const [location, setLocation] = useState<LocationType[]>([])
     const [responsable, setResponsable] = useState<ResponsableType[]>([])
+    const [pageLocation, setPageLocation] = useState<number>(0)
+    const [pageStatus, setPageStatus] = useState<number>(0)
+    const [pageCategory, setPageCategory] = useState<number>(0)
+    const [moreLocation, setMoreLocation] = useState<boolean>(true)
+    const [moreStatus, setMoreStatus] = useState<boolean>(true)
+    const [moreCategory, setMoreCategory] = useState<boolean>(true)
+    const [loading, setLoading] = useState<boolean>(false)
+
+    const limit = 10
 
     const dispatch = useDispatch<AppDispatch>()
     const theme = useTheme()
 
-    useEffect(() => {
-        const fectCategory = async () => {
-            try {
-                const response = await instance.get('/contables')
-                const data = response.data
-                setCategory(data || [])
-            } catch (error) {
-                console.error('error al extraer categorias', error)
+    const fetchLocation = async () => {
+        setLoading(true);
+
+        try {
+            const response = await instance.get('/activos/location', {
+                params: { skip: pageLocation * limit, limit }
+            });
+
+            const data = response.data;
+
+            if (data.result?.length < limit) {
+                setMoreLocation(false);
             }
+            setLocation(prev => {
+                const merged = [...prev, ...(data.result || [])];
+
+                return merged.filter(
+                    (item, index, arr) =>
+                        index === arr.findIndex(i => i._id === item._id)
+                );
+            });
+
+        } catch (error) {
+            console.error('error al extraer categorias', error);
+        } finally {
+            setLoading(false);
         }
-        fectCategory();
-    }, [])
+    };
+
+    const fectCategory = async () => {
+        setLoading(true)
+        try {
+            const response = await instance.get('/contables', {
+                params: { skip: pageCategory * limit, limit }
+            })
+
+            const data = response.data
+
+            if (data.result?.length < limit) {
+                setMoreCategory(false);
+            }
+            setCategory(prev => {
+                const merged = [...prev, ...(data.result || [])];
+
+                return merged.filter(
+                    (item, index, arr) =>
+                        index === arr.findIndex(i => i._id === item._id)
+                );
+            });
+
+        } catch (error) {
+            console.error('error al extraer categorias', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const fectStatus = async () => {
+        setLoading(true)
+        try {
+            const response = await instance.get('/activos/status')
+            const data = response.data
+            if (data?.length < limit) setMoreStatus(false);
+            setStatus(prev => {
+                const newPrev = data?.result || [];
+                const preWithoutOther = prev.filter(p => p._id !== 'Other');
+                return [...preWithoutOther, ...newPrev, { name: 'Otro', _id: 'Other' }]
+            })
+        } catch (error) {
+            console.error('error al extraer categorias', error)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     useEffect(() => {
-        const fectStatus = async () => {
-            try {
-                const response = await instance.get('/activos/status')
-                const data = response.data
-                setStatus([...data, { name: 'Otro', _id: 'otro' }])
-            } catch (error) {
-                console.error('error al extraer categorias', error)
-            }
+        if (open) {
+            setMoreCategory(true);
+            setMoreLocation(true);
+            setMoreStatus(true);
+            setPageCategory(0);
+            setPageLocation(0);
+            setPageStatus(0);
+            fectCategory();
+            fetchLocation();
+            fectStatus();
+            setLocation([])
+            setCategory([])
+            setStatus([])
         }
-        fectStatus();
-    }, [mode, toggle])
+    }, [mode, open])
 
     useEffect(() => {
-        const fectLocation = async () => {
-            try {
-                const response = await instance.get('/activos/location')
-                const data = response.data
-                setLocation([...data, { name: 'OTRO', _id: 'Other' }])
-            } catch (error) {
-                console.error('error al extraer categorias', error)
-            }
+        if (pageCategory > 0) {
+            fectCategory();
         }
-        fectLocation();
-    }, [mode, toggle])
+    }, [pageCategory]);
+
+    useEffect(() => {
+        if (pageLocation > 0) {
+            fetchLocation();
+        }
+    }, [pageLocation]);
+
+    useEffect(() => {
+        if (pageStatus > 0) {
+            fectStatus();
+        }
+    }, [pageStatus]);
+
 
     useEffect(() => {
         const fectUsers = async () => {
             try {
                 const response = await instance.get('/users/all-users')
                 const data = response.data
-                setResponsable(data)
+                setResponsable(data.result ?? [])
             } catch (error) {
                 console.error('error al extraer los usuarios', error)
             }
         }
         fectUsers();
     }, [])
+
+    const searchUsers = useCallback(
+        debounce(async (field: string) => {
+            try {
+                const res = await instance.get('/users/all-users', {
+                    params: { field, skip: 0, limit: 10 }
+                });
+
+                setResponsable(res.data?.result ?? []);
+            } catch (error) {
+                console.error("Error buscando usuarios:", error);
+            }
+        }, 400),
+        []
+    );
+
+
+    const handleScrollCategory = (event: any) => {
+        const { scrollTop, scrollHeight, clientHeight } = event.target;
+
+        const isBottom = scrollHeight - scrollTop <= clientHeight + 5;
+        if (isBottom && moreCategory) {
+            setPageCategory(prev => prev + 1);
+        }
+    }
+    const handleScrollLocation = (event: any) => {
+        const { scrollTop, scrollHeight, clientHeight } = event.target;
+
+        const isBottom = scrollHeight - scrollTop <= clientHeight + 5;
+
+        if (isBottom && moreLocation) {
+            setPageLocation(prev => prev + 1);
+        }
+    }
+
+    const handleScrollStatus = (event: any) => {
+        const { scrollTop, scrollHeight, clientHeight } = event.target;
+
+        const isBottom = scrollHeight - scrollTop <= clientHeight + 5;
+        if (isBottom && moreStatus) {
+            setPageStatus(prev => prev + 1);
+        }
+    }
 
     const {
         reset,
@@ -256,19 +407,63 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
     const otherLocation = watch('location')
 
     useEffect(() => {
-        reset(defaultValues)
-        if (defaultValues?.imageUrl) {
-            setImagePre(`${baseUrl().backendURI}/images/${defaultValues?.imageUrl}`)
-        } else {
-            setImagePre(defaultValues?.imageUrl || null)
+        const findOne = async () => {
+            try {
+                const res = await instance.get(`/activos/${id}`);
+                const date_a = new Date(res.data?.date_a)
+                const form_a = `${date_a.getFullYear()}-${String(date_a.getMonth() + 1).padStart(2, '0')}-${String(date_a.getDate()).padStart(2, '0')}`
+                setCategory(prev => {
+                    const exists = prev.some(c => c._id === res.data?.category._id)
+                    if (!exists && res.data?.category) {
+                        return [res.data.category, ...prev];
+                    }
+                    return prev;
+
+                })
+                setLocation(prev => {
+                    const exists = prev.some(l => l._id === res.data?.location._id)
+                    if (!exists && res.data?.location) {
+                        return [res.data.location, ...prev]
+                    }
+                    return prev
+                })
+                setStatus(prev => {
+                    const exists = prev.some(s => s._id === res.data?.status._id);
+                    if (!exists && res.data?.status) {
+                        return [res.data.status, ...prev]
+                    }
+                    return prev
+                })
+                setResponsable(prev => {
+                    const exists = prev.some(r => r._id === res.data?.responsable._id);
+                    if (!exists && res.data.responsable) {
+                        return [res.data.responsable, ...prev]
+                    }
+                    return prev
+                })
+                reset({ ...res.data, date_a: form_a })
+                setImagePre(`${baseUrl().backendURI}/images/${res.data?.imageUrl}`)
+            } catch (e) {
+                console.log(e)
+            }
         }
-    }, [defaultValues, mode, toggle])
+        if (open && mode === 'update' && id) {
+            findOne()
+        }
+    }, [open, mode, id])
 
     useEffect(() => {
         return () => {
             if (imagePrev) URL.revokeObjectURL(imagePrev);
         };
     }, [imagePrev]);
+
+    useEffect(() => {
+        if (!open && mode === 'update') {
+            reset({ ...defaultValues })
+            setImagePre(null)
+        }
+    }, [open, mode])
 
     const onSubmit = (data: ActivosType) => {
 
@@ -282,10 +477,8 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
         formData.append('category', data.category?._id || '')
         formData.append('status', data.status?._id || '')
         formData.append('responsable', data.responsable?._id || '')
+        formData.append('description', data.description || '')
 
-        if (data.description) {
-            formData.append('description', data.description)
-        }
         if (data.subcategory) {
             formData.append('subcategory', data.subcategory?._id || '')
         }
@@ -299,18 +492,15 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
             formData.append('image', data.image)
         }
 
-        if (mode === 'edit' && defaultValues?._id) {
-            dispatch(updateActivos({ data: formData, id: defaultValues._id, filtrs: { skip: page * pageSize, limit: pageSize } }))
+        if (mode === 'update' && id) {
+            dispatch(updateActivos({ data: formData, id, filters: { skip: page * pageSize, limit: pageSize } }))
         } else {
-            dispatch(addActivos({ data: formData, filtrs: { skip: page * pageSize, limit: pageSize } }))
+            dispatch(addActivos({ data: formData, filters: { skip: page * pageSize, limit: pageSize } }))
         }
-
-        toggle()
-        reset()
-        setImagePre(null)
+        handleOnclickCancel()
     }
     const handleOnclickCancel = () => {
-        reset()
+        reset({ ...defaultValues })
         toggle()
         setImagePre(null)
     }
@@ -478,13 +668,28 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                         error={Boolean(errors.location)}
                                         onChange={(e) => {
                                             const selectedId = e.target.value as string
+                                            if (selectedId === 'Other') {
+                                                onChange({ name: 'OTRO', _id: 'Other' })
+                                                return
+                                            }
+
                                             const selectedLocation = location.find((loc) => loc._id === selectedId) || null
                                             onChange(selectedLocation)
+                                        }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                style: { maxHeight: 300 },
+                                                onScroll: handleScrollLocation
+                                            }
                                         }}
                                     >
                                         {location.map((loc, index) => (
                                             <MenuItem value={loc._id || ''} key={index}>{loc.name}</MenuItem>
                                         ))}
+                                        {loading && (
+                                            <MenuItem disabled><CircularProgress /></MenuItem>
+                                        )}
+                                        <MenuItem value="Other">OTRO</MenuItem>
                                     </Select>
                                 )}
                             />
@@ -502,7 +707,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                     render={({ field: { value, onChange } }) => (
                                         <TextField
                                             label='Especifica otra ubicación del activo'
-                                            onChange={onChange}
+                                            onChange={(e) => onChange(e.target.value.toUpperCase())}
                                             error={Boolean(errors.otherLocation)}
                                             value={value}
                                         />
@@ -569,10 +774,19 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                             onChange(selectedCategory)
                                             setValue('subcategory', null)
                                         }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                style: { maxHeight: 300 },
+                                                onScroll: handleScrollCategory
+                                            }
+                                        }}
                                     >
                                         {category.map((cat, index) => (
                                             <MenuItem value={cat._id || ''} key={index}>{cat.name}</MenuItem>
                                         ))}
+                                        {loading && (
+                                            <MenuItem disabled><CircularProgress /></MenuItem>
+                                        )}
                                     </Select>
                                 )}
                             />
@@ -637,10 +851,19 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                             onChange(selectedStatus)
                                         }}
                                         error={Boolean(errors.status)}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                style: { maxHeight: 300 },
+                                                onScroll: handleScrollStatus
+                                            }
+                                        }}
                                     >
                                         {status.map((st) => (
                                             <MenuItem value={st._id} key={st._id}>{st.name}</MenuItem>
                                         ))}
+                                        {loading && (
+                                            <MenuItem disabled><CircularProgress /></MenuItem>
+                                        )}
                                     </Select>
                                 )}
                             />
@@ -681,6 +904,9 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                                         }
                                         value={value || null}
                                         isOptionEqualToValue={(option, value) => option._id === value._id}
+                                        onInputChange={(_, newImput) => {
+                                            searchUsers(newImput)
+                                        }}
                                         onChange={(_, newValue) => onChange(newValue)}
                                         renderInput={(params) => (
                                             <TextField
@@ -722,11 +948,11 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', defaultValues }: 
                     </Grid>
                 </Grid>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Button size='large' variant='outlined' color='secondary' onClick={handleOnclickCancel} startIcon={<Icon icon='mdi:cancel-circle' />}>
+                    <Button size='large' variant='contained' color='error' onClick={handleOnclickCancel} startIcon={<Icon icon='mdi:cancel-circle' />}>
                         Cancelar
                     </Button>
-                    <Button size='large' type='submit' variant='contained' sx={{ mr: 3 }} startIcon={<Icon icon='mdi:content-save' />}>
-                        Guardar
+                    <Button size='large' type='submit' variant='contained' color="success" startIcon={<Icon icon='mdi:content-save' />}>
+                        {mode === 'create' ? 'Guardar' : 'Actualizar'}
                     </Button>
                 </Box>
             </fieldset>

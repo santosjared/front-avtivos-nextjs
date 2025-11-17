@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { instance } from 'src/configs/axios'
 import Swal from 'sweetalert2'
 
@@ -41,18 +41,16 @@ interface ResponsableType {
 interface ActivosType {
     _id?: string
     code: string,
-    responsable: ResponsableType | null,
     name: string,
-    location: LocationType | null,
     price_a: number,
     date_a: string,
-    image: File | null,
     imageUrl: string | null,
-    status: StatusType | null
-    otherStatus: string,
-    category: ContableType | null
-    subcategory: SubCategoryType | null
-    otherLocation: string
+    responsable: ResponsableType,
+    grade: GradeType
+    location: LocationType,
+    status: StatusType
+    category: ContableType
+    subcategory: SubCategoryType
     description: string
 }
 
@@ -65,31 +63,37 @@ interface FetchParams {
 interface ActivosState {
     data: ActivosType[]
     total: number
-    loading: boolean
-    error: string | null
 }
 
 const initialState: ActivosState = {
     data: [],
     total: 0,
-    loading: false,
-    error: null,
 }
 
 export const fetchData = createAsyncThunk(
     'activos/fetchData',
-    async (filtrs?: FetchParams) => {
-        const response = await instance.get('/activos', {
-            params: filtrs,
-        })
-        return response.data
+    async (filters?: FetchParams) => {
+        try {
+            const response = await instance.get('/activos', {
+                params: filters,
+            })
+            return response.data
+        } catch (e) {
+            console.log(e)
+            Swal.fire({
+                title: '¡Error!',
+                text: 'Se ha producido un error al intentar traer los activos. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null
+        }
     }
 )
 
 export const addActivos = createAsyncThunk(
     'activos/addActivos',
     async (
-        data: { data: FormData; filtrs: FetchParams },
+        data: { data: FormData; filters: FetchParams },
         { dispatch }
     ) => {
         try {
@@ -101,16 +105,16 @@ export const addActivos = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response.data
         } catch (e) {
+            console.log(e)
             Swal.fire({
                 title: '¡Error!',
-                text: 'Error al crear activo',
-                icon: 'error',
-            })
-            console.log(e)
-            throw e
+                text: 'Se ha producido un error al intentar crear el activo. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null
         }
     }
 )
@@ -118,7 +122,7 @@ export const addActivos = createAsyncThunk(
 export const updateActivos = createAsyncThunk(
     'activos/updateActivos',
     async (
-        data: { id: string; data: FormData; filtrs: FetchParams },
+        data: { id: string; data: FormData; filters: FetchParams },
         { dispatch }
     ) => {
         try {
@@ -130,23 +134,23 @@ export const updateActivos = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response.data
         } catch (e) {
+            console.log(e)
             Swal.fire({
                 title: '¡Error!',
-                text: 'Error al actualizar activo',
-                icon: 'error',
-            })
-            console.log(e)
-            throw e
+                text: 'Se ha producido un error al intentar actualizar el activo. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null
         }
     }
 )
 
 export const deleteActivos = createAsyncThunk(
     'activos/deleteActivos',
-    async (data: { id: string; filtrs: FetchParams }, { dispatch }) => {
+    async (data: { id: string; filters: FetchParams }, { dispatch }) => {
         try {
             const response = await instance.delete(`/activos/${data.id}`)
 
@@ -156,15 +160,16 @@ export const deleteActivos = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response.data
         } catch (e) {
+            console.log(e)
             Swal.fire({
                 title: '¡Error!',
-                text: 'Error al eliminar activo',
-                icon: 'error',
-            })
-            throw e
+                text: 'Se ha producido un error al intentar eliminar el activo. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null
         }
     }
 )
@@ -175,53 +180,9 @@ export const activosSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
-            // Fetch
-            .addCase(fetchData.pending, (state) => {
-                state.loading = true
-                state.error = null
-            })
             .addCase(fetchData.fulfilled, (state, action) => {
-                state.data = action.payload.result
-                state.total = action.payload.total
-                state.loading = false
-            })
-            .addCase(fetchData.rejected, (state, action) => {
-                state.loading = false
-                state.error = action.error.message || 'Error al cargar activos'
-            })
-
-            .addCase(addActivos.pending, (state) => {
-                state.loading = true
-            })
-            .addCase(addActivos.fulfilled, (state) => {
-                state.loading = false
-            })
-            .addCase(addActivos.rejected, (state, action) => {
-                state.loading = false
-                state.error = action.error.message || 'Error al crear activo'
-            })
-
-            .addCase(updateActivos.pending, (state) => {
-                state.loading = true
-            })
-            .addCase(updateActivos.fulfilled, (state) => {
-                state.loading = false
-            })
-            .addCase(updateActivos.rejected, (state, action) => {
-                state.loading = false
-                state.error = action.error.message || 'Error al actualizar activo'
-            })
-
-            // Delete
-            .addCase(deleteActivos.pending, (state) => {
-                state.loading = true
-            })
-            .addCase(deleteActivos.fulfilled, (state) => {
-                state.loading = false
-            })
-            .addCase(deleteActivos.rejected, (state, action) => {
-                state.loading = false
-                state.error = action.error.message || 'Error al eliminar activo'
+                state.data = action.payload?.result || []
+                state.total = action.payload?.total || 0
             })
     },
 })

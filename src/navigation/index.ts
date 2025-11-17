@@ -5,56 +5,65 @@ const navigation = (): VerticalNavItemsType => {
   return [
     {
       title: 'Dashboard',
-      path: '/home',
+      path: '/dashboard',
+      action: 'read',
       subject: 'dashboard',
       icon: 'mdi:home-outline',
     },
     {
       title: 'Registro de usuarios',
       path: '/users',
+      action: 'read',
       subject: 'users',
       icon: 'mdi:users',
     },
     {
       title: 'Roles y permisos',
       path: '/roles',
+      action: 'read',
       subject: 'roles',
       icon: 'carbon:user-role',
     },
     {
-      title: 'Registro de activos',
-      path: '/activos',
-      subject: 'activos',
-      icon: 'mdi:bank-outline'
-    },
-    {
       title: 'Grupos contables',
       path: '/contable',
+      action: 'read',
       subject: 'contable',
       icon: 'mdi:monitor-cellphone'
     },
     {
+      title: 'Registro de activos',
+      path: '/activos',
+      action: 'read',
+      subject: 'activos',
+      icon: 'mdi:bank-outline'
+    },
+    {
       title: 'Entrega de activos',
-      path: '/borrowing',
-      subject: 'borrowing',
+      path: '/entregas',
+      action: 'read',
+      subject: 'entrega',
       icon: 'mdi:handshake'
     },
     {
       title: 'Devolucion de activos',
       path: '/devolucion',
+      action: 'read',
       subject: 'devolucion',
       icon: 'mdi:human-dolly'
     },
     {
       title: 'Depreciación',
       path: '/depreciation',
-      subject: 'depreciation',
+      action: 'read',
+      subject: 'depreciacion',
       icon: 'mdi:alarm-panel-outline'
     },
     {
       title: 'Bitacoras',
-      path: '/depreciation',
-      subject: 'depreciation',
+      path: '/bitacora',
+      action: 'read',
+      subject: 'bitacora',
       icon: 'mdi:dns-outline'
     },
   ]

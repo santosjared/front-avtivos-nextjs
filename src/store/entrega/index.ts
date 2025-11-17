@@ -47,15 +47,13 @@ interface ActivosType {
 }
 
 interface EntregaType {
+    _id: string
     code: string
     date: string
     time: string
-    grade: GradeType
-    name: string
-    lastName: string
-    user_en: UserType
+    user_en: UserType | null
+    user_rec: UserType | null
     location: LocationType
-    activos: ActivosType[]
     documentUrl?: string
     description?: string
 }
@@ -104,8 +102,8 @@ export const fetchData = createAsyncThunk(
 export const addEntrega = createAsyncThunk(
     'entrega/addentrega',
     async (
-        data: { data: FormData; filtrs: FetchParams },
-        { dispatch }
+        data: { data: FormData; filters: FetchParams },
+        { dispatch, rejectWithValue }
     ) => {
         try {
             const response = await instance.post('/entregas', data.data)
@@ -116,7 +114,7 @@ export const addEntrega = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response.data
         } catch (e: any) {
             console.log(e)
@@ -126,7 +124,7 @@ export const addEntrega = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
-            return null
+            return rejectWithValue(e.response?.data);
         }
     }
 )
@@ -134,8 +132,8 @@ export const addEntrega = createAsyncThunk(
 export const updateEntrega = createAsyncThunk(
     'entrega/updateEntregas',
     async (
-        data: { id: string; data: FormData; filtrs: FetchParams },
-        { dispatch }
+        data: { id: string; data: FormData; filters: FetchParams },
+        { dispatch, rejectWithValue }
     ) => {
         try {
             const response = await instance.put(`/entregas/${data.id}`, data.data)
@@ -146,7 +144,7 @@ export const updateEntrega = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response.data
         } catch (e: any) {
             console.log(e)
@@ -156,7 +154,7 @@ export const updateEntrega = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
-            return null
+            return rejectWithValue(e.response?.data);
         }
     }
 )

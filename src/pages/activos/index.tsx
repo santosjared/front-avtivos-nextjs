@@ -11,6 +11,7 @@ import Swal from 'sweetalert2'
 import CustomChip from 'src/@core/components/mui/chip'
 import { instance } from "src/configs/axios";
 import AddActivos from "src/views/pages/activos/Register";
+import Can from "src/layouts/components/acl/Can";
 
 interface SubCategoryType {
     _id?: string
@@ -43,7 +44,6 @@ interface GradeType {
 
 interface ResponsableType {
     _id: string
-    grade: GradeType
     name: string
     lastName: string
 }
@@ -51,18 +51,16 @@ interface ResponsableType {
 interface ActivosType {
     _id?: string
     code: string,
-    responsable: ResponsableType | null,
     name: string,
-    location: LocationType | null,
     price_a: number,
     date_a: string,
-    image: File | null,
     imageUrl: string | null,
-    status: StatusType | null
-    otherStatus: string,
-    category: ContableType | null
-    subcategory: SubCategoryType | null
-    otherLocation: string
+    responsable: ResponsableType,
+    grade: GradeType
+    location: LocationType,
+    status: StatusType
+    category: ContableType
+    subcategory: SubCategoryType
     description: string
 }
 
@@ -71,35 +69,14 @@ interface CellType {
     row: ActivosType
 }
 
-const today = new Date().toISOString().split('T')[0]
-
-const defaultValues: ActivosType = {
-    code: '',
-    responsable: null,
-    name: '',
-    location: null,
-    price_a: 0,
-    date_a: today,
-    status: null,
-    otherStatus: '',
-    image: null,
-    imageUrl: null,
-    category: null,
-    subcategory: null,
-    otherLocation: '',
-    description: ''
-}
-
-
-
 const Activos = () => {
 
     const [field, setField] = useState('');
     const [pageSize, setPageSize] = useState(10);
     const [page, setPage] = useState(0);
     const [drawOpen, setDrawOpen] = useState<boolean>(false)
-    const [mode, setMode] = useState<'create' | 'edit'>('create')
-    const [activos, setActivos] = useState<ActivosType>(defaultValues)
+    const [mode, setMode] = useState<'create' | 'update'>('create')
+    const [id, setId] = useState<string>('')
     const [category, setCategory] = useState<ContableType[]>([])
     const [subcategory, setSubCategory] = useState<SubCategoryType[]>([])
     const [status, setStatus] = useState<StatusType[]>([])
@@ -119,9 +96,11 @@ const Activos = () => {
     useEffect(() => {
         const fectCategory = async () => {
             try {
-                const response = await instance.get('/contables')
+                const response = await instance.get('/contables', {
+                    params: { skip: 0, limit: 50 }
+                })
                 const data = response.data
-                setCategory(data || [])
+                setCategory(data.result || [])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
@@ -145,9 +124,11 @@ const Activos = () => {
     useEffect(() => {
         const fectStatus = async () => {
             try {
-                const response = await instance.get('/activos/status')
+                const response = await instance.get('/activos/status', {
+                    params: { skip: 0, limit: 50 }
+                })
                 const data = response.data
-                setStatus(data || [])
+                setStatus(data.result || [])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
@@ -160,7 +141,7 @@ const Activos = () => {
     }
 
     const handleCreate = () => {
-        setActivos(defaultValues)
+        setId('')
         setMode('create')
         toggleDrawer()
     }
@@ -172,12 +153,8 @@ const Activos = () => {
         const theme = useTheme()
 
         const handleEdit = () => {
-
-            const date_a = new Date(activo.date_a)
-            const form_a = `${date_a.getFullYear()}-${String(date_a.getMonth() + 1).padStart(2, '0')}-${String(date_a.getDate()).padStart(2, '0')}`
-
-            setActivos({ ...activo, date_a: form_a })
-            setMode('edit')
+            setId(activo?._id ?? '')
+            setMode('update')
             toggleDrawer()
         }
 
@@ -193,18 +170,23 @@ const Activos = () => {
                 confirmButtonText: 'Eliminar',
             }).then(async (result) => { return result.isConfirmed });
             if (confirme) {
-                dispatch(deleteActivos({ id: activo._id || '', filtrs: { field: '', skip: page * pageSize, limit: pageSize } }))
+                dispatch(deleteActivos({ id: activo._id || '', filters: { field: '', skip: page * pageSize, limit: pageSize } }))
             }
         }
 
         return (
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <IconButton size='small' onClick={handleEdit}>
-                    <Icon icon='mdi:pencil-outline' fontSize={20} color='#00a0f4' />
-                </IconButton>
-                <IconButton size='small' onClick={handleDelete}>
-                    <Icon icon='ic:outline-delete' fontSize={20} color='#ff4040' />
-                </IconButton>
+                <Can I="update" a="activos">
+                    <IconButton size='small' onClick={handleEdit}>
+                        <Icon icon='mdi:pencil-outline' fontSize={20} color={theme.palette.info.main} />
+                    </IconButton>
+                </Can>
+                <Can I="delete" a="activos">
+                    <IconButton size='small' onClick={handleDelete}>
+                        <Icon icon='ic:outline-delete' fontSize={20} color={theme.palette.error.main} />
+                    </IconButton>
+                </Can>
+
             </Box>
         )
     }
@@ -262,7 +244,7 @@ const Activos = () => {
         {
             field: 'responsable', headerName: 'Responsable', minWidth: 190, flex: 0.19,
             renderCell: ({ row }: CellType) => {
-                const text = `${row.responsable?.grade?.name || ''} ${row.responsable?.name || ''} ${row.responsable?.lastName || ''}`
+                const text = `${row.grade?.name || ''} ${row.responsable?.name || ''} ${row.responsable?.lastName || ''}`
                 return (
                     <Tooltip title={text}>
                         <Typography variant="body2" noWrap>{text}</Typography>
@@ -346,7 +328,7 @@ const Activos = () => {
                                         handleFilters(selected)
                                     }}
                                 >
-                                    {category.map((cat, index) => (
+                                    {category?.map?.((cat, index) => (
                                         <MenuItem value={cat.name} key={index}>{cat.name}</MenuItem>
                                     ))}
                                 </Select>
@@ -384,7 +366,7 @@ const Activos = () => {
                                         handleFilters(selected)
                                     }}
                                 >
-                                    {status.map((st, index) => (
+                                    {status?.map?.((st, index) => (
                                         <MenuItem value={st.name} key={index}>{st.name}</MenuItem>
                                     ))}
                                 </Select>
@@ -431,15 +413,17 @@ const Activos = () => {
                                     Todos
                                 </Button>
                             </Box>
-                            <Button
-                                onClick={handleCreate}
-                                variant="contained"
-                                startIcon={<Icon icon='mdi:add' />}
-                                sx={{ p: 3.5 }}
-                                color="success"
-                            >
-                                Nuevo Activo
-                            </Button>
+                            <Can I="create" a="activos">
+                                <Button
+                                    onClick={handleCreate}
+                                    variant="contained"
+                                    startIcon={<Icon icon='mdi:add' />}
+                                    sx={{ p: 3.5 }}
+                                    color="success"
+                                >
+                                    Nuevo Activo
+                                </Button>
+                            </Can>
                         </Box>
                     </Box>
                     <Box sx={{ display: 'flex', p: 5, justifyContent: 'space-between' }}>
@@ -471,15 +455,18 @@ const Activos = () => {
 
                 </Card>
             </Grid>
-            <AddDraw open={drawOpen} toggle={toggleDrawer} title={mode === 'create' ? 'Registro del activo fijo' : 'Editar activo fijo'}>
-                <AddActivos
-                    toggle={toggleDrawer}
-                    page={page}
-                    pageSize={pageSize}
-                    defaultValues={activos}
-                    mode={mode}
-                />
-            </AddDraw>
+            <Can I={mode} a="activos">
+                <AddDraw open={drawOpen} toggle={toggleDrawer} title={mode === 'create' ? 'Registro del activo fijo' : 'Editar activo fijo'}>
+                    <AddActivos
+                        toggle={toggleDrawer}
+                        open={drawOpen}
+                        page={page}
+                        pageSize={pageSize}
+                        id={id}
+                        mode={mode}
+                    />
+                </AddDraw>
+            </Can>
         </Grid>
     )
 }

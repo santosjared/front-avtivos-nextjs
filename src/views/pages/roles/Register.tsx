@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, FormHelperText, Grid, TextField, Typography } from "@mui/material"
+import { Box, Button, FormControl, FormHelperText, Grid, TextField, Typography, useTheme } from "@mui/material"
 import { useEffect } from "react"
 import Icon from 'src/@core/components/icon'
 import * as yup from 'yup'
@@ -7,38 +7,47 @@ import { AppDispatch } from "src/store"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from '@hookform/resolvers/yup'
 import { addRol, updateRol } from "src/store/role"
-import { Rol } from "src/context/types"
+import { instance } from "src/configs/axios"
+
+interface RoleType {
+    name: string
+    description: string
+    _id?: string
+}
+
+const defaultValues: RoleType = {
+    name: '',
+    description: '',
+}
 
 interface Props {
     toggle: () => void
     page: number
     pageSize: number
-    mode?: 'create' | 'edit'
-    defaultValues?: Rol
+    mode?: 'create' | 'update'
+    id?: string
 }
 
-const showErrors = (field: string, valueLen: number, min: number) => {
-    if (valueLen === 0) {
-        return `El campo ${field} es requerido`
-    } else if (valueLen > 0 && valueLen < min) {
-        return `El campo ${field} debe tener al menos ${min} caracteres`
-    } else {
-        return ''
-    }
-}
+const schema = yup.object().shape({
+    name: yup
+        .string()
+        .trim()
+        .required('El campo nombre es requerido')
+        .min(3, 'El campo nombre debe tener al menos 3 caracteres')
+        .max(50, 'El campo nombre no debe exceder los 50 caracteres'),
+    description: yup
+        .string()
+        .trim()
+        .transform(value => (value?.trim() === '' ? undefined : value))
+        .min(10, 'El campo descripción debe tener al menos 10 caracteres')
+        .max(500, 'El campo descripción no debe exceder los 500 caracteres')
+        .notRequired()
+})
 
-const AddRol = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Props) => {
-    const schema = yup.object().shape({
-        name: yup.string()
-            .required('El campo nombre es requerido')
-            .min(3, obj => showErrors('nombre', obj.value.length, obj.min)),
-        description: yup
-            .string()
-            .transform(value => (value?.trim() === '' ? undefined : value))
-            .min(10, 'El campo descripción debe tener al menos 10 caracteres')
-            .notRequired()
-    })
+const AddRol = ({ toggle, page, pageSize, mode = 'create', id }: Props) => {
 
+
+    const theme = useTheme()
     const dispatch = useDispatch<AppDispatch>()
 
     const {
@@ -53,31 +62,39 @@ const AddRol = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Prop
     })
 
     useEffect(() => {
-        reset(defaultValues)
-    }, [defaultValues, mode])
-
-    const onSubmit = (data: Rol) => {
-        if (mode === 'edit' && defaultValues?._id) {
-            const { _id, __v, permissions, ...newData } = data
-            dispatch(updateRol({ data: newData, id: defaultValues._id, filtrs: { skip: page * pageSize, limit: pageSize } }))
-        } else {
-
-            const { _id, __v, permissions, ...newData } = data
-            dispatch(addRol({ data: newData, filtrs: { skip: page * pageSize, limit: pageSize } }))
+        if (mode === 'update' && id) {
+            const fetchRoleData = async () => {
+                try {
+                    const response = await instance.get(`/roles/${id}`);
+                    const roleData: RoleType = response.data;
+                    reset(roleData);
+                } catch (error) {
+                    console.error('Error fetching role data:', error);
+                }
+            }
+            fetchRoleData()
         }
-        toggle()
-        reset()
+    }, [id, mode])
+
+    const onSubmit = (data: RoleType) => {
+        if (mode === 'update' && id) {
+            delete data._id
+            dispatch(updateRol({ data, id: id || '', filters: { skip: page * pageSize, limit: pageSize } }))
+        } else {
+            dispatch(addRol({ data, filters: { skip: page * pageSize, limit: pageSize } }))
+        }
+        handleOnclickCancel()
     }
 
     const handleOnclickCancel = () => {
-        reset()
+        reset(defaultValues)
         toggle()
     }
 
     return (
         <Box>
             <form autoComplete="off" onSubmit={handleSubmit(onSubmit)}>
-                <fieldset style={{ border: '1.5px solid #E0E0E0', borderRadius: 10, paddingTop: 20 }}>
+                <fieldset style={{ border: `1.5px solid ${theme.palette.divider}`, borderRadius: 10, paddingTop: 20 }}>
                     <legend style={{ textAlign: 'center' }}>
                         <Typography variant='subtitle2'>Agregar Nuevo Usuario</Typography>
                     </legend>
@@ -125,8 +142,8 @@ const AddRol = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Prop
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Button
                             size='large'
-                            variant='outlined'
-                            color='secondary'
+                            variant='contained'
+                            color='error'
                             onClick={handleOnclickCancel}
                             startIcon={<Icon icon='mdi:cancel-circle' />}
                         >
@@ -136,10 +153,10 @@ const AddRol = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Prop
                             size='large'
                             type='submit'
                             variant='contained'
-                            sx={{ mr: 3 }}
+                            color="success"
                             startIcon={<Icon icon='mdi:content-save' />}
                         >
-                            Guardar
+                            {mode === 'create' ? 'Guardar' : 'Actualizar'}
                         </Button>
                     </Box>
                 </fieldset>

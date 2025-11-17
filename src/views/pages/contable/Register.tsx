@@ -8,6 +8,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 
 import { addContable, updateContable } from "src/store/contable";
 import { useEffect } from "react";
+import { instance } from "src/configs/axios";
 
 interface SubCategory {
     _id?: string
@@ -20,15 +21,24 @@ interface ContableType {
     name: string,
     util: number,
     subcategory: SubCategory[]
-    description?: string
+    description: string
 }
+
+const defaultValues: ContableType = {
+    name: '',
+    util: 0,
+    subcategory: [],
+    description: ''
+}
+
 
 interface Props {
     toggle: () => void;
+    open: boolean
     page: number;
     pageSize: number;
-    mode?: 'create' | 'edit';
-    defaultValues?: ContableType;
+    mode?: 'create' | 'update';
+    id?: string;
 }
 
 const schema = yup.object().shape({
@@ -68,13 +78,15 @@ const schema = yup.object().shape({
     ).notRequired(),
     description: yup
         .string()
-        .transform(value => (value?.trim() === '' ? undefined : value))
-        .min(10, 'La descripción debe tener al menos 10 caracteres')
-        .max(1000, 'La descripción no debe superar los 1000 caracteres')
-        .notRequired()
+        .transform(value => value === undefined || value === null ? '' : value)
+        .test('empty-or-valid', 'La descripción debe tener al menos 10 caracteres', value => {
+            if (!value) return true
+            return value.trim().length >= 10
+        })
+        .max(500, 'La descripción no debe superar los 500 caracteres')
 })
 
-const AddConatble = ({ toggle, page, pageSize, mode = 'create', defaultValues }: Props) => {
+const AddConatble = ({ toggle, page, pageSize, mode = 'create', id, open }: Props) => {
 
     const dispatch = useDispatch<AppDispatch>()
     const theme = useTheme()
@@ -91,8 +103,20 @@ const AddConatble = ({ toggle, page, pageSize, mode = 'create', defaultValues }:
     });
 
     useEffect(() => {
-        reset(defaultValues)
-    }, [defaultValues])
+        const findOne = async () => {
+            try {
+                const response = await instance.get(`contables/${id}`)
+                reset(response.data || defaultValues)
+            } catch (e) {
+                console.log(e)
+            }
+        }
+        if (mode === 'update' && open) {
+            findOne()
+        }
+    }, [mode, open])
+
+
     const { fields, append, remove } = useFieldArray({
         control,
         name: 'subcategory'
@@ -101,27 +125,18 @@ const AddConatble = ({ toggle, page, pageSize, mode = 'create', defaultValues }:
         append({ name: '', util: 0 })
     }
     const onSubmit = (data: ContableType) => {
-
-        if (mode === 'edit' && defaultValues?._id) {
-            const { _id, ...payload } = data
-            dispatch(updateContable({ data: payload, id: defaultValues._id, filtrs: { skip: page * pageSize, limit: pageSize } }))
+        delete data._id
+        if (mode === 'update' && id) {
+            dispatch(updateContable({ data, id, filters: { skip: page * pageSize, limit: pageSize } }))
         } else {
-            dispatch(addContable({ data, filtrs: { skip: page * pageSize, limit: pageSize } }))
+            dispatch(addContable({ data, filters: { skip: page * pageSize, limit: pageSize } }))
         }
-
-        toggle()
-        reset()
+        handleOnclickCancel()
     }
     const handleOnclickCancel = () => {
-        reset({
-            name: '',
-            util: 0,
-            description: '',
-            subcategory: []
-        })
+        reset(defaultValues)
         toggle()
     }
-
 
     return (<Box>
         <form autoComplete="off" onSubmit={handleSubmit(onSubmit)}>
@@ -250,11 +265,11 @@ const AddConatble = ({ toggle, page, pageSize, mode = 'create', defaultValues }:
                     </Grid>
                 </Grid>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Button size='large' variant='outlined' color='secondary' onClick={handleOnclickCancel} startIcon={<Icon icon='mdi:cancel-circle' />}>
+                    <Button size='large' variant='contained' color='error' onClick={handleOnclickCancel} startIcon={<Icon icon='mdi:cancel-circle' />}>
                         Cancelar
                     </Button>
-                    <Button size='large' type='submit' variant='contained' sx={{ mr: 3 }} startIcon={<Icon icon='mdi:content-save' />}>
-                        Guardar
+                    <Button size='large' type='submit' variant='contained' color="success" startIcon={<Icon icon='mdi:content-save' />}>
+                        {mode == 'create' ? 'Guardar' : 'Actualizar'}
                     </Button>
                 </Box>
             </fieldset>

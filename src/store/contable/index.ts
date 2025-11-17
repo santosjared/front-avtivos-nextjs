@@ -34,54 +34,78 @@ const initialState: ActivosState = {
 
 export const fetchData = createAsyncThunk(
     'contable/fetchData',
-    async (filtrs?: FetchParams) => {
-        const response = await instance.get('/contables', { params: filtrs })
-        return response.data
+    async (filters?: FetchParams) => {
+        try {
+            const response = await instance.get('/contables', { params: filters })
+            return response.data
+        } catch (e) {
+            console.log(e)
+            Swal.fire({
+                title: '¡Error!',
+                text: 'Se ha producido un error al intentar traer grupos contables. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null
+        }
     }
 )
 
 export const addContable = createAsyncThunk(
     'contable/addContable',
-    async ({ data, filtrs }: { data: ContableType; filtrs: FetchParams }, { dispatch }) => {
+    async ({ data, filters }: { data: ContableType; filters: FetchParams }, { dispatch }) => {
         try {
             const response = await instance.post('/contables', data)
             Swal.fire('¡Éxito!', 'Grupo contable creado exitosamente', 'success')
-            dispatch(fetchData(filtrs))
+            dispatch(fetchData(filters))
             return response.data
         } catch (e) {
-            Swal.fire('¡Error!', 'Error al crear Grupo contable', 'error')
-            throw e
+            console.log(e)
+            Swal.fire({
+                title: '¡Error!',
+                text: 'Se ha producido un error al intentar crear grupos contables. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null
         }
     }
 )
 
 export const updateContable = createAsyncThunk(
     'contable/updateContable',
-    async ({ id, data, filtrs }: { id: string; data: ContableType; filtrs: FetchParams }, { dispatch }) => {
+    async ({ id, data, filters }: { id: string; data: ContableType; filters: FetchParams }, { dispatch }) => {
         try {
             const response = await instance.put(`/contables/${id}`, data)
             Swal.fire('¡Éxito!', 'Grupo contable actualizado exitosamente', 'success')
-            dispatch(fetchData(filtrs))
+            dispatch(fetchData(filters))
             return response.data
         } catch (e) {
-            Swal.fire('¡Error!', 'Error al actualizar Grupo contable', 'error')
             console.log(e)
-            throw e
+            Swal.fire({
+                title: '¡Error!',
+                text: 'Se ha producido un error al intentar actualizar grupos contables. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null
         }
     }
 )
 
 export const deleteContable = createAsyncThunk(
     'contable/deleteContable',
-    async ({ id, filtrs }: { id: string; filtrs: FetchParams }, { dispatch }) => {
+    async ({ id, filters }: { id: string; filters: FetchParams }, { dispatch }) => {
         try {
             const response = await instance.delete(`/contables/${id}`)
             Swal.fire('¡Éxito!', 'Grupo contable eliminado exitosamente', 'success')
-            dispatch(fetchData(filtrs))
+            dispatch(fetchData(filters))
             return response.data
         } catch (e) {
-            Swal.fire('¡Error!', 'Error al eliminar grupo contable', 'error')
-            throw e
+            console.log(e)
+            Swal.fire({
+                title: '¡Error!',
+                text: 'Se ha producido un error al intentar Eliminar grupos contables. Contacte al desarrollador del sistema para más asistencia.',
+                icon: "error"
+            });
+            return null
         }
     }
 )
@@ -92,8 +116,8 @@ export const contableSlice = createSlice({
     reducers: {},
     extraReducers: builder => {
         builder.addCase(fetchData.fulfilled, (state, action) => {
-            state.data = action.payload.result || action.payload
-            state.total = action.payload.total || action.payload.length || 0
+            state.data = action.payload?.result ?? []
+            state.total = action.payload?.total ?? 0
         })
     }
 })

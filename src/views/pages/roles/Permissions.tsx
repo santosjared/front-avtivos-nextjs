@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from 'react';
 import {
     Box, Button, Dialog, DialogTitle, DialogContent, DialogActions,
     IconButton, Typography, Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, Paper, Switch, FormControlLabel
+    TableHead, TableRow, Paper, FormControlLabel,
+    Checkbox
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import Icon from 'src/@core/components/icon';
@@ -11,8 +12,10 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import Swal from 'sweetalert2';
 import { instance } from 'src/configs/axios';
 import { Actions, Permission, Rol, Subjects } from 'src/context/types';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from 'src/store';
+import { fetchData } from 'src/store/role';
 
-// Styled Dialog
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
         padding: theme.spacing(2),
@@ -22,76 +25,53 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
-// Styled iOS switch
-const IOSSwitch = styled((props: any) => (
-    <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
-))(({ theme }) => ({
-    width: 42,
-    height: 26,
-    padding: 0,
-    '& .MuiSwitch-switchBase': {
-        padding: 0,
-        margin: 2,
-        transitionDuration: '300ms',
-        '&.Mui-checked': {
-            transform: 'translateX(16px)',
-            color: '#fff',
-            '& + .MuiSwitch-track': {
-                backgroundColor: theme.palette.mode === 'dark' ? '#2ECA45' : '#65C466',
-                opacity: 1,
-                border: 0,
-            },
-        },
-    },
-    '& .MuiSwitch-thumb': {
-        boxSizing: 'border-box',
-        width: 22,
-        height: 22,
-    },
-    '& .MuiSwitch-track': {
-        borderRadius: 13,
-        backgroundColor: '#E9E9EA',
-        opacity: 1,
-        transition: theme.transitions.create(['background-color'], {
-            duration: 500,
-        }),
-    },
-}));
-
-// Acciones posibles
-const ACTIONS: Actions[] = ['read', 'create', 'update', 'delete'];
-
-// Lista base de permisos posibles
-const permissions: Permission[] = [
-    { subject: 'home', action: ['read'] },
-    { subject: 'usuarios', action: ['read', 'create', 'update', 'delete'] },
-    { subject: 'roles', action: ['read', 'create', 'update', 'delete'] },
-    { subject: 'activos', action: ['read', 'create', 'update', 'delete'] },
-    { subject: 'entrega', action: ['read', 'create', 'update', 'delete'] },
-    { subject: 'devolucion', action: ['read', 'create', 'update', 'delete'] },
-];
-
 interface Props {
     open: boolean;
     toggle: () => void;
-    rol: Rol;
+    id: string;
+    page: number
+    pageSize: number
 }
 
-const Permissions = ({ open, toggle, rol }: Props) => {
+export const permissions: Permission[] = [
+    { subject: 'dashboard', action: ['read'] },
+    { subject: 'users', action: ['read', 'create', 'update', 'delete', 'up', 'dow'] },
+    { subject: 'roles', action: ['read', 'create', 'update', 'delete', 'permissions'] },
+    { subject: 'activos', action: ['read', 'create', 'update', 'delete'] },
+    { subject: 'contable', action: ['read', 'create', 'update', 'delete'] },
+    { subject: 'entrega', action: ['read', 'create', 'update', 'delete', 'details', 'print'] },
+    { subject: 'devolucion', action: ['read', 'create', 'update', 'delete', 'details', 'print'] },
+    { subject: 'depreciacion', action: ['read', 'calcular'] },
+    { subject: 'bitacora', action: ['read'] },
+];
+
+const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
     const [loading, setLoading] = useState<boolean>(false);
     const [per, setPer] = useState<Permission[]>([]);
-    const [allActive, setAllActive] = useState<boolean>(false);
+    const [rol, setRol] = useState<Rol | null>(null)
+    const [allSelect, setAllSelect] = useState<boolean>(false);
 
     useEffect(() => {
-        setPer(rol.permissions)
-    }, [rol])
-    // Verifica si una acción está activa para un módulo
+        const fetchPermission = async () => {
+            try {
+                const response = await instance.get(`/roles/permissions/${id}`)
+                setRol(response.data || null)
+                setPer(response.data.permissions || [])
+            } catch (e) {
+                console.log(e)
+            }
+        }
+        if (open) {
+            fetchPermission()
+        }
+    }, [id, open])
+
     const isActionEnabled = useCallback((action: Actions, subject: Subjects): boolean => {
         const permission = per.find(p => p.subject === subject);
         return permission?.action.includes(action) || false;
     }, [per]);
 
-    // Alternar acción específica
+    const dispatch = useDispatch<AppDispatch>()
     const handleToggle = (action: Actions, subject: Subjects) => {
         setPer(prev => {
             const idx = prev.findIndex(p => p.subject === subject);
@@ -108,38 +88,34 @@ const Permissions = ({ open, toggle, rol }: Props) => {
                 return [...prev, { subject, action: [action] }];
             }
         });
-        setAllActive(false);
+        setAllSelect(false);
     };
 
-    // Activar o desactivar todos
-    const allCheck = () => {
-        if (allActive) {
-            setPer([]);
+    const handleAllSelect = () => {
+        if (!allSelect) {
+            setPer(permissions)
         } else {
-            const allPermissions: Permission[] = permissions.map(p => ({
-                subject: p.subject,
-                action: [...p.action]
-            }));
-            setPer(allPermissions);
+            setPer([])
         }
-        setAllActive(!allActive);
-    };
+        setAllSelect(!allSelect)
+    }
 
-    // Guardar cambios
     const handleSave = async () => {
         setLoading(true);
         try {
-            await instance.put(`/roles/asigne-permissions/${rol._id}`, { permissions: per });
+            await instance.put(`/roles/asigne-permissions/${rol?._id}`, { permissions: per });
+
+            dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
             Swal.fire({
                 title: '¡Éxito!',
-                text: `Permisos asignados exitosamente al rol ${rol.name}`,
+                text: `Permisos asignados exitosamente al rol ${rol?.name}`,
                 icon: "success"
             });
         } catch (e) {
             console.log(e);
             Swal.fire({
                 title: '¡Error!',
-                text: `Se produjo un error al asignar permisos al rol ${rol.name}. Contacta al desarrollador.`,
+                text: `Se produjo un error al asignar permisos al rol ${rol?.name}. Contacta al desarrollador.`,
                 icon: "error"
             });
         }
@@ -156,10 +132,10 @@ const Permissions = ({ open, toggle, rol }: Props) => {
             onClose={toggle}
             open={open}
             fullWidth
-            maxWidth="md"
+            maxWidth="lg"
         >
             <DialogTitle sx={{ m: 0, p: 2 }}>
-                Asignar permisos al rol {rol.name}
+                Asignar permisos al rol {rol?.name}
             </DialogTitle>
 
             <IconButton
@@ -177,47 +153,337 @@ const Permissions = ({ open, toggle, rol }: Props) => {
             </IconButton>
 
             <DialogContent dividers>
-                <Box sx={{ display: 'flex', ml: 6, mb: 3 }}>
-                    <Typography variant='h5' sx={{ mr: 3 }}>Todos</Typography>
-                    <IOSSwitch checked={allActive} onChange={allCheck} />
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <FormControlLabel
+                        label={<Typography variant='h5'>Seleccionar Todos</Typography>}
+                        control={<Checkbox checked={allSelect} onChange={handleAllSelect} />}
+                    />
+
                 </Box>
 
                 <TableContainer component={Paper} sx={{ p: 2 }}>
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Módulo</Typography></TableCell>
-                                {ACTIONS.map(action => (
-                                    <TableCell key={action} align="center">
-                                        <Typography sx={{ fontWeight: 'bold', fontSize: 15, textTransform: 'capitalize' }}>
-                                            {action}
-                                        </Typography>
-                                    </TableCell>
-                                ))}
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Módulos</Typography></TableCell>
+                                <TableCell colSpan={5} align='center'><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Permisos</Typography></TableCell>
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
-                            {permissions.map((permission) => (
-                                <TableRow key={permission.subject}>
-                                    <TableCell sx={{ textTransform: 'capitalize' }}>{permission.subject}</TableCell>
-                                    {ACTIONS.map(action => (
-                                        <TableCell key={`${permission.subject}-${action}`} align="center">
-                                            {permission.action.includes(action) ? (
-                                                <FormControlLabel
-                                                    control={
-                                                        <IOSSwitch
-                                                            checked={allActive ? true : isActionEnabled(action, permission.subject)}
-                                                            onChange={() => handleToggle(action, permission.subject)}
-                                                        />
-                                                    }
-                                                    label={null}
-                                                />
-                                            ) : null}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))}
+                            <TableRow>
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Dashboard</Typography></TableCell>
+                                <TableCell colSpan={5}>
+                                    <FormControlLabel
+                                        label='Leer'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('read', 'dashboard')}
+                                            onChange={() => handleToggle('read', 'dashboard')}
+                                        />}
+                                    />
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Administración de Usuarios</Typography></TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Leer'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('read', 'users')}
+                                            onChange={() => handleToggle('read', 'users')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Crear'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('create', 'users')}
+                                            onChange={() => handleToggle('create', 'users')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Editar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('update', 'users')}
+                                            onChange={() => handleToggle('update', 'users')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Dar de alta'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('up', 'users')}
+                                            onChange={() => handleToggle('up', 'users')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Dar de baja'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('dow', 'users')}
+                                            onChange={() => handleToggle('dow', 'users')}
+                                        />}
+                                    />
+                                </TableCell>
+                            </TableRow>
+
+                            <TableRow>
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Administración de Roles y Permisos</Typography></TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Leer'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('read', 'roles')}
+                                            onChange={() => handleToggle('read', 'roles')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Crear'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('create', 'roles')}
+                                            onChange={() => handleToggle('create', 'roles')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Editar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('update', 'roles')}
+                                            onChange={() => handleToggle('update', 'roles')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Eliminar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('delete', 'roles')}
+                                            onChange={() => handleToggle('delete', 'roles')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Asignar permisos'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('permissions', 'roles')}
+                                            onChange={() => handleToggle('permissions', 'roles')}
+                                        />}
+                                    />
+                                </TableCell>
+                            </TableRow>
+
+                            <TableRow>
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Administración de Activos</Typography></TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Leer'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('read', 'activos')}
+                                            onChange={() => handleToggle('read', 'activos')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Crear'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('create', 'activos')}
+                                            onChange={() => handleToggle('create', 'activos')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Editar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('update', 'activos')}
+                                            onChange={() => handleToggle('update', 'activos')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell colSpan={2}>
+                                    <FormControlLabel
+                                        label='Eliminar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('delete', 'activos')}
+                                            onChange={() => handleToggle('delete', 'activos')}
+                                        />}
+                                    />
+                                </TableCell>
+                            </TableRow>
+
+                            <TableRow>
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Administración de grupos contables</Typography></TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Leer'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('read', 'contable')}
+                                            onChange={() => handleToggle('read', 'contable')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Crear'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('create', 'contable')}
+                                            onChange={() => handleToggle('create', 'contable')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Editar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('update', 'contable')}
+                                            onChange={() => handleToggle('update', 'contable')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell colSpan={2} >
+                                    <FormControlLabel
+                                        label='Eliminar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('delete', 'contable')}
+                                            onChange={() => handleToggle('delete', 'contable')}
+                                        />}
+                                    />
+                                </TableCell>
+                            </TableRow>
+
+                            <TableRow>
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Administración de Entregas</Typography></TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Leer'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('read', 'entrega')}
+                                            onChange={() => handleToggle('read', 'entrega')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Crear'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('create', 'entrega')}
+                                            onChange={() => handleToggle('create', 'entrega')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Editar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('update', 'entrega')}
+                                            onChange={() => handleToggle('update', 'entrega')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell >
+                                    <FormControlLabel
+                                        label='Eliminar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('delete', 'entrega')}
+                                            onChange={() => handleToggle('delete', 'entrega')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='imprimir'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('print', 'entrega')}
+                                            onChange={() => handleToggle('print', 'entrega')}
+                                        />}
+                                    />
+                                </TableCell>
+                            </TableRow>
+
+                            <TableRow>
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Administración de Devolución</Typography></TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Leer'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('read', 'devolucion')}
+                                            onChange={() => handleToggle('read', 'devolucion')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Crear'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('create', 'devolucion')}
+                                            onChange={() => handleToggle('create', 'devolucion')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='Editar'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('update', 'devolucion')}
+                                            onChange={() => handleToggle('update', 'devolucion')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell colSpan={2}>
+                                    <FormControlLabel
+                                        label='imprimir'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('print', 'devolucion')}
+                                            onChange={() => handleToggle('print', 'devolucion')}
+                                        />}
+                                    />
+                                </TableCell>
+                            </TableRow>
+
+                            <TableRow>
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Depreciación</Typography></TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='leer'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('read', 'depreciacion')}
+                                            onChange={() => handleToggle('read', 'depreciacion')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell colSpan={4}>
+                                    <FormControlLabel
+                                        label='Calcular'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('calcular', 'depreciacion')}
+                                            onChange={() => handleToggle('calcular', 'depreciacion')}
+                                        />}
+                                    />
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Bitacoras</Typography></TableCell>
+                                <TableCell colSpan={5}>
+                                    <FormControlLabel
+                                        label='Leer'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('read', 'bitacora')}
+                                            onChange={() => handleToggle('read', 'bitacora')}
+                                        />}
+                                    />
+                                </TableCell>
+                            </TableRow>
                         </TableBody>
                     </Table>
                 </TableContainer>
@@ -235,8 +501,8 @@ const Permissions = ({ open, toggle, rol }: Props) => {
                     <Button
                         size='large'
                         disabled={loading}
-                        variant='outlined'
-                        color='secondary'
+                        variant='contained'
+                        color='error'
                         onClick={handleCancel}
                         startIcon={<Icon icon='mdi:cancel-circle' />}
                     >
@@ -258,6 +524,7 @@ const Permissions = ({ open, toggle, rol }: Props) => {
                             size='large'
                             onClick={handleSave}
                             variant='contained'
+                            color='success'
                             startIcon={<Icon icon='mdi:content-save' />}
                         >
                             Guardar

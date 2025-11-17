@@ -42,14 +42,11 @@ const AuthProvider = ({ children }: Props) => {
           })
           .then(async response => {
             const rememberMe = JSON.parse(localStorage.getItem(authConfig.rememberMe) ?? 'false');
-            const { user, access_token, refresh_token } = response.data;
+            const { user, access_token } = response.data;
 
             const newUser = { ...user, rememberMe };
             setLoading(false);
-            dispatch(setUser({ user: newUser, token: access_token, refresh_token }));
-
-            window.localStorage.setItem(authConfig.onTokenExpiration, refresh_token);
-
+            dispatch(setUser({ user: newUser, token: access_token, refresh_token: storedToken }));
           })
           .catch(() => {
             window.localStorage.removeItem(authConfig.onTokenExpiration);
@@ -69,7 +66,7 @@ const AuthProvider = ({ children }: Props) => {
 
   const handleLogin = (params: LoginParams, errorCallback?: ErrCallbackType) => {
     instance
-      .post('/auth', { email: params.email, password: params.password })
+      .post('/auth', { email: params.email, password: params.password, rememberMe: params.rememberMe })
       .then(async response => {
 
         const { user, access_token, refresh_token } = response.data;
@@ -89,6 +86,7 @@ const AuthProvider = ({ children }: Props) => {
       })
 
       .catch(err => {
+        console.log(err);
         if (errorCallback) errorCallback(err)
       })
   }

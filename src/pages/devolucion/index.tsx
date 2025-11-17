@@ -79,7 +79,7 @@ interface DevolucionType {
     grade: GradeType
     name: string
     lastName: string
-    user_en: UserType
+    user_rec: UserType
     activos: ActivosType[]
     documentUrl?: string
     description?: string
@@ -114,7 +114,7 @@ const Devolucion = () => {
 
     const toggle = () => setOpenEntrega(!openEntrega)
 
-    const store = useSelector((state: RootState) => state.entrega)
+    const store = useSelector((state: RootState) => state.devolucion)
     useEffect(() => {
         dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
     }, [pageSize, page])
@@ -172,7 +172,7 @@ const Devolucion = () => {
             field: 'user_dev',
             headerName: 'Usuario que devuelve',
             renderCell: ({ row }: CellType) => {
-                const fullname = `${row.user_en?.grade?.name || ''} ${row.user_en?.name || ''} ${row.user_en?.lastName || ''}`
+                const fullname = `${row.grade?.name || ''} ${row.name || ''} ${row.lastName || ''}`
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -183,11 +183,11 @@ const Devolucion = () => {
         {
             flex: 0.22,
             minWidth: 220,
-            field: 'user_recibe',
+            field: 'user_rec',
             sortable: false,
             headerName: 'Usuario que recibe',
             renderCell: ({ row }: CellType) => {
-                const fullname = `${row.grade?.name || ''} ${row.name || ''} ${row.lastName || ''}`
+                const fullname = `${row.user_rec?.grade?.name || ''} ${row.user_rec?.name || ''} ${row.user_rec?.lastName || ''}`
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -258,22 +258,6 @@ const Devolucion = () => {
             setAnchorEl(null)
         }
 
-        const handleDow = async () => {
-            setAnchorEl(null)
-            const confirme = await Swal.fire({
-                title: `¿Estas seguro de eliminar la devoloción del activo con el código: ${devolucion.code || ''} ?`,
-                icon: "warning",
-                showCancelButton: true,
-                cancelButtonColor: theme.palette.info.main,
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: theme.palette.error.main,
-                confirmButtonText: 'Eliminar',
-            }).then(async (result) => { return result.isConfirmed });
-            if (confirme) {
-                dispatch(deleteDevolucion({ filters: { skip: page * pageSize, limit: pageSize }, id: devolucion._id || '' }))
-            }
-        }
-
         const handleUp = async () => {
             setAnchorEl(null)
         }
@@ -327,10 +311,6 @@ const Devolucion = () => {
                     </MenuItem>
                     {/* </Can> */}
                     {/* <Can I='delete' a='users'> */}
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleDow}>
-                        <Icon icon='mdi:delete' fontSize={20} color={theme.palette.error.main} />
-                        Eliminar
-                    </MenuItem>
                     <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleUp}>
                         <Icon icon='mdi:printer' fontSize={20} color={theme.palette.error.main} />
                         generar pdf

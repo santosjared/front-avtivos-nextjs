@@ -10,6 +10,7 @@ import { deleteContable, fetchData } from "src/store/contable";
 import { DataGrid } from "@mui/x-data-grid";
 import AddConatble from "src/views/pages/contable/Register";
 import SubCategory from "src/views/pages/contable/SubCategory";
+import Can from "src/layouts/components/acl/Can";
 
 interface SubCategoryType {
     _id?: string
@@ -29,23 +30,14 @@ interface CellType {
     row: ContableType
 }
 
-const defaultValues: ContableType = {
-    name: '',
-    util: 0,
-    subcategory: [],
-    description: ''
-}
-
-
-
 const Contable = () => {
 
     const [field, setField] = useState('');
     const [pageSize, setPageSize] = useState(10);
     const [page, setPage] = useState(0);
     const [drawOpen, setDrawOpen] = useState<boolean>(false)
-    const [mode, setMode] = useState<'create' | 'edit'>('create')
-    const [contable, setContable] = useState<ContableType>(defaultValues)
+    const [mode, setMode] = useState<'create' | 'update'>('create')
+    const [id, setId] = useState<string>('')
     const [category, setCategory] = useState<ContableType[]>([])
     const [subcategory, setSubCategory] = useState<SubCategory[]>([])
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -65,9 +57,11 @@ const Contable = () => {
     useEffect(() => {
         const fectCategory = async () => {
             try {
-                const response = await instance.get('/contables')
-                const data = response.data
-                setCategory(data)
+                const response = await instance.get('/contables', {
+                    params: { skip: 0, limit: 50 }
+                })
+                const data = response.data.result
+                setCategory(data || [])
             } catch (error) {
                 console.error('error al extraer categorias', error)
             }
@@ -80,7 +74,7 @@ const Contable = () => {
             try {
                 const response = await instance.get('/contables/subcategories')
                 const data = response.data
-                setSubCategory(data)
+                setSubCategory(data || [])
             } catch (error) {
                 console.error('error al extraer la sub categoria', error)
             }
@@ -93,7 +87,7 @@ const Contable = () => {
     }
 
     const handleCreate = () => {
-        setContable(defaultValues)
+        setId('')
         setMode('create')
         toggleDrawer()
     }
@@ -104,8 +98,8 @@ const Contable = () => {
         const theme = useTheme()
 
         const handleEdit = () => {
-            setContable(contable)
-            setMode('edit')
+            setId(contable._id || '')
+            setMode('update')
             toggleDrawer()
         }
 
@@ -121,18 +115,22 @@ const Contable = () => {
                 confirmButtonText: 'Eliminar',
             }).then(async (result) => { return result.isConfirmed });
             if (confirme) {
-                dispatch(deleteContable({ id: contable._id || '', filtrs: { field: '', skip: page * pageSize, limit: pageSize } }))
+                dispatch(deleteContable({ id: contable._id || '', filters: { field: '', skip: page * pageSize, limit: pageSize } }))
             }
         }
 
         return (
             <Box sx={{ display: 'flex', justifyContent: 'start' }}>
-                <IconButton size='small' onClick={handleEdit}>
-                    <Icon icon='mdi:pencil-outline' fontSize={20} color={theme.palette.info.main} />
-                </IconButton>
-                <IconButton size='small' onClick={handleDelete}>
-                    <Icon icon='ic:outline-delete' fontSize={20} color={theme.palette.error.main} />
-                </IconButton>
+                <Can I="update" a="contable">
+                    <IconButton size='small' onClick={handleEdit}>
+                        <Icon icon='mdi:pencil-outline' fontSize={20} color={theme.palette.info.main} />
+                    </IconButton>
+                </Can>
+                <Can I="delete" a="contable">
+                    <IconButton size='small' onClick={handleDelete}>
+                        <Icon icon='ic:outline-delete' fontSize={20} color={theme.palette.error.main} />
+                    </IconButton>
+                </Can>
             </Box>
         )
     }
@@ -150,7 +148,7 @@ const Contable = () => {
             }
         },
         {
-            flex: 0.2,
+            flex: 0.15,
             minWidth: 90,
             field: 'util',
             headerName: 'Vida útil',
@@ -161,8 +159,8 @@ const Contable = () => {
             }
         },
         {
-            flex: 0.2,
-            minWidth: 90,
+            flex: 0.290,
+            minWidth: 290,
             field: 'description',
             headerName: 'Descripción',
             renderCell: ({ row }: CellType) => {
@@ -172,7 +170,7 @@ const Contable = () => {
             }
         },
         {
-            flex: 0.2,
+            flex: 0.15,
             minWidth: 90,
             field: 'actions',
             sortable: false,
@@ -211,7 +209,7 @@ const Contable = () => {
                                         handleFilters(selected)
                                     }}
                                 >
-                                    {category.map((cat, index) => (
+                                    {category?.map?.((cat, index) => (
                                         <MenuItem value={cat.name} key={index}>{cat.name}</MenuItem>
                                     ))}
                                 </Select>
@@ -311,7 +309,7 @@ const Contable = () => {
                             if (params.field === 'actions') {
                                 return
                             }
-                            setContable(params.row)
+                            setId(params.row._id)
                             toggleSub()
                         }}
                         getRowHeight={() => 'auto'}
@@ -331,23 +329,26 @@ const Contable = () => {
                     />
                 </Card>
             </Grid>
-            <AddDraw open={drawOpen} toggle={toggleDrawer} title={mode === 'create' ? 'Registro del rol' : 'Editar rol'}>
-                <AddConatble
-                    toggle={toggleDrawer}
-                    page={page}
-                    pageSize={pageSize}
-                    defaultValues={contable}
-                    mode={mode}
-                />
-            </AddDraw>
-            <SubCategory open={openSub} toggle={toggleSub} category={contable} />
+            <Can I={mode} a="contable">
+                <AddDraw open={drawOpen} toggle={toggleDrawer} title={mode === 'create' ? 'Registro del grupo contable' : 'Editar grupo contable'}>
+                    <AddConatble
+                        toggle={toggleDrawer}
+                        open={drawOpen}
+                        page={page}
+                        pageSize={pageSize}
+                        id={id}
+                        mode={mode}
+                    />
+                </AddDraw>
+            </Can>
+            <SubCategory open={openSub} toggle={toggleSub} id={id} />
         </Grid>
     )
 }
 
 Contable.acl = {
     action: 'read',
-    subject: 'activos'
+    subject: 'contable'
 }
 
 Contable.authGuard = true;

@@ -3,7 +3,7 @@ import { Permission } from "src/context/types";
 export const mergePermissions = (permissions: Permission[]): Permission[] => {
     const merged: Record<string, Permission> = {};
 
-    for (const perm of permissions) {
+    for (const perm of permissions ?? []) {
         const key = perm.subject;
 
         if (!merged[key]) {

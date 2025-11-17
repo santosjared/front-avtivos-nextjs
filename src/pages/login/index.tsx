@@ -19,8 +19,6 @@ import { Controller, useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { useAuth } from 'src/hooks/useAuth'
 import BlankLayout from 'src/@core/layouts/BlankLayout'
-import { useDispatch } from 'react-redux'
-import { AppDispatch } from 'src/store'
 
 const Wrapper = styled(Box)<BoxProps>(({ theme }) => ({
   width: '100%',
@@ -56,12 +54,19 @@ const FormControlLabel = styled(MuiFormControlLabel)<FormControlLabelProps>(({ t
 }))
 
 const schema = yup.object().shape({
-  email: yup.string().email().required(),
-  password: yup.string().min(5).required()
+  email: yup
+    .string()
+    .email('Correo electrónico no válido')
+    .required('Correo electrónico es requerido'),
+  password: yup
+    .string()
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
+    .max(32, 'La contraseña no debe exceder los 32 caracteres')
+    .required('Contraseña es requerida')
 })
 
 const defaultValues = {
-  password: 'admin',
+  password: 'admin123',
   email: 'admin@gmail.com'
 }
 
@@ -74,7 +79,6 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState<boolean>(true)
   const [showPassword, setShowPassword] = useState<boolean>(false)
 
-  const dispatch = useDispatch<AppDispatch>();
   const theme = useTheme()
 
   const { login } = useAuth()
