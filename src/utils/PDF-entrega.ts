@@ -109,7 +109,7 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
         const text = `DIRECCION DEPARTAMENTAL DE BOMBEROS "CARACOLES POTOSI"`;
         const textWidth = doc.getTextWidth(text);
         const x = marginLeft + (usableWidth - textWidth - marginRight) / 2;
-        const y = pageHeight - marginBottom + 20;
+        const y = pageHeight - marginBottom + 30;
 
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
@@ -318,8 +318,8 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
             fontStyle: 'bolditalic'
         },
         columnStyles: {
-            2: { cellWidth: 150 },
-            3: { cellWidth: 150 }
+            4: { cellWidth: 130 },
+            5: { cellWidth: 130 }
         },
         didDrawPage: () => {
             header();

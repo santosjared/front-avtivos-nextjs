@@ -131,7 +131,7 @@ export const updateDevolucion = createAsyncThunk(
         { dispatch }
     ) => {
         try {
-            const response = await instance.put(`/devolucin/${data.id}`, data.data)
+            const response = await instance.put(`/devolucion/${data.id}`, data.data)
 
             Swal.fire({
                 title: '¡Éxito!',

@@ -166,14 +166,14 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
                         <TableHead>
                             <TableRow>
                                 <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Módulos</Typography></TableCell>
-                                <TableCell colSpan={5} align='center'><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Permisos</Typography></TableCell>
+                                <TableCell colSpan={6} align='center'><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Permisos</Typography></TableCell>
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
                             <TableRow>
                                 <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Dashboard</Typography></TableCell>
-                                <TableCell colSpan={5}>
+                                <TableCell colSpan={6}>
                                     <FormControlLabel
                                         label='Leer'
                                         control={<Checkbox
@@ -222,7 +222,7 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
                                         />}
                                     />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell colSpan={2}>
                                     <FormControlLabel
                                         label='Dar de baja'
                                         control={<Checkbox
@@ -271,7 +271,7 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
                                         />}
                                     />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell colSpan={2}>
                                     <FormControlLabel
                                         label='Asignar permisos'
                                         control={<Checkbox
@@ -311,7 +311,7 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
                                         />}
                                     />
                                 </TableCell>
-                                <TableCell colSpan={2}>
+                                <TableCell colSpan={3}>
                                     <FormControlLabel
                                         label='Eliminar'
                                         control={<Checkbox
@@ -351,7 +351,7 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
                                         />}
                                     />
                                 </TableCell>
-                                <TableCell colSpan={2} >
+                                <TableCell colSpan={3} >
                                     <FormControlLabel
                                         label='Eliminar'
                                         control={<Checkbox
@@ -402,10 +402,19 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
                                 </TableCell>
                                 <TableCell>
                                     <FormControlLabel
-                                        label='imprimir'
+                                        label='imprimir documento'
                                         control={<Checkbox
                                             checked={isActionEnabled('print', 'entrega')}
                                             onChange={() => handleToggle('print', 'entrega')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormControlLabel
+                                        label='subir documento'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('upload', 'entrega')}
+                                            onChange={() => handleToggle('upload', 'entrega')}
                                         />}
                                     />
                                 </TableCell>
@@ -440,12 +449,21 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
                                         />}
                                     />
                                 </TableCell>
-                                <TableCell colSpan={2}>
+                                <TableCell >
                                     <FormControlLabel
-                                        label='imprimir'
+                                        label='imprimir documento'
                                         control={<Checkbox
                                             checked={isActionEnabled('print', 'devolucion')}
                                             onChange={() => handleToggle('print', 'devolucion')}
+                                        />}
+                                    />
+                                </TableCell>
+                                <TableCell colSpan={2}>
+                                    <FormControlLabel
+                                        label='subir documento'
+                                        control={<Checkbox
+                                            checked={isActionEnabled('upload', 'devolucion')}
+                                            onChange={() => handleToggle('upload', 'devolucion')}
                                         />}
                                     />
                                 </TableCell>
@@ -462,7 +480,7 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
                                         />}
                                     />
                                 </TableCell>
-                                <TableCell colSpan={4}>
+                                <TableCell colSpan={5}>
                                     <FormControlLabel
                                         label='Calcular'
                                         control={<Checkbox
@@ -474,7 +492,7 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
                             </TableRow>
                             <TableRow>
                                 <TableCell><Typography sx={{ fontWeight: 'bold', fontSize: 15 }}>Bitacoras</Typography></TableCell>
-                                <TableCell colSpan={5}>
+                                <TableCell colSpan={6}>
                                     <FormControlLabel
                                         label='Leer'
                                         control={<Checkbox

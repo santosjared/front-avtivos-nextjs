@@ -12,6 +12,11 @@ import Link from 'next/link'
 import getConfig from 'src/configs/environment'
 import Entregas from 'src/views/pages/devolucion/entregas'
 import { deleteDevolucion, fetchData } from 'src/store/devolucion'
+import { instance } from 'src/configs/axios'
+import { PDFDevuelto } from 'src/utils/PDF-devuelto'
+import { setState } from 'src/store/devolver'
+import { useRouter } from 'next/router'
+import Can from 'src/layouts/components/acl/Can'
 
 interface LocationType {
     _id: string
@@ -103,10 +108,8 @@ const Devolucion = () => {
     const [page, setPage] = useState<number>(0)
     const [field, setField] = useState<string>('')
     const [openEntrega, setOpenEntrega] = useState<boolean>(false)
-    const [register, setRegister] = useState<RegisterType | null>(null)
-    const [activos, setActivos] = useState<ActivosType[]>([])
-    const [mode, setMode] = useState<'create' | 'edit'>('create')
-    const [id, setId] = useState<string>('')
+
+    const router = useRouter()
 
     const dispatch = useDispatch<AppDispatch>()
 
@@ -256,30 +259,27 @@ const Devolucion = () => {
             setAnchorEl(null)
         }
 
-        const handleUp = async () => {
+        const print = async () => {
             setAnchorEl(null)
+            try {
+                const res = await instance.get(`/devolucion/${devolucion.code}`)
+                const { activos, ...rest } = res.data
+                PDFDevuelto(rest || null, activos || [])
+            } catch (e) {
+                console.log(e);
+                Swal.fire({
+                    title: '¡Error!',
+                    text: 'Se ha producido un error al intentar imprimir la entrega. Contacte al desarrollador del sistema para más asistencia.',
+                    icon: "error"
+                });
+            }
         }
 
 
         const handleEdit = () => {
-            // const select = entrega.activos.map(activo => activo._id)
-            // const defaultvalue = {
-            //     date: entrega.date,
-            //     time: entrega.time,
-            //     grade: entrega.grade,
-            //     name: entrega.name,
-            //     lastName: entrega.lastName,
-            //     location: entrega.location,
-            //     description: entrega.description,
-            //     otherLocation: '',
-            //     otherGrade: ''
-            // }
-            // dispatch(setSelectedIds(select));
-            // dispatch(setData(defaultvalue))
-            // setId(entrega._id || '');
-            setMode('edit');
-            // setStep('add');
             setAnchorEl(null);
+            dispatch(setState('update'))
+            router.push(`/devolver/${devolucion.code}`)
         }
 
         return (
@@ -302,18 +302,18 @@ const Devolucion = () => {
                     }}
                     PaperProps={{ style: { minWidth: '8rem' } }}
                 >
-                    {/* <Can I='update' a='users'> */}
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleEdit}>
-                        <Icon icon='mdi:pencil-outline' fontSize={20} color={theme.palette.info.main} />
-                        Editar
-                    </MenuItem>
-                    {/* </Can> */}
-                    {/* <Can I='delete' a='users'> */}
-                    <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleUp}>
-                        <Icon icon='mdi:printer' fontSize={20} color={theme.palette.error.main} />
-                        generar pdf
-                    </MenuItem>
-                    {/* </Can> */}
+                    <Can I='update' a='devolucion'>
+                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleEdit}>
+                            <Icon icon='mdi:pencil-outline' fontSize={20} color={theme.palette.info.main} />
+                            Editar
+                        </MenuItem>
+                    </Can>
+                    <Can I='print' a='devolucion'>
+                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={print}>
+                            <Icon icon='mdi:printer' fontSize={20} color={theme.palette.error.main} />
+                            generar pdf
+                        </MenuItem>
+                    </Can>
 
                 </Menu>
             </>
@@ -377,15 +377,17 @@ const Devolucion = () => {
                                             Todos
                                         </Button>
                                     </Box>
-                                    <Button
-                                        onClick={toggle}
-                                        variant="contained"
-                                        color='success'
-                                        startIcon={<Icon icon='mdi:add' />}
-                                        sx={{ p: 3.5 }}
-                                    >
-                                        Nuevo devolucion
-                                    </Button>
+                                    <Can I='create' a='devolucion'>
+                                        <Button
+                                            onClick={toggle}
+                                            variant="contained"
+                                            color='success'
+                                            startIcon={<Icon icon='mdi:add' />}
+                                            sx={{ p: 3.5 }}
+                                        >
+                                            Nuevo devolucion
+                                        </Button>
+                                    </Can>
                                 </Box>
                             </Box>
                             <Box sx={{ p: 5 }}>

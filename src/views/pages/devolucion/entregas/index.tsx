@@ -12,6 +12,7 @@ import getConfig from 'src/configs/environment'
 import { useRouter } from 'next/router'
 import { fetchData } from 'src/store/entrega'
 import Can from 'src/layouts/components/acl/Can'
+import { setState } from 'src/store/devolver'
 
 interface LocationType {
     _id: string
@@ -216,6 +217,11 @@ const Entregas = ({ toggle }: Props) => {
             sortable: false,
             headerName: 'Acciones',
             renderCell: ({ row }: CellType) => {
+                const handleDevolver = () => {
+
+                    dispatch(setState('create'))
+                    router.push(`/devolver/${row.code}`)
+                }
                 return (
                     <Box
                         sx={{
@@ -228,7 +234,7 @@ const Entregas = ({ toggle }: Props) => {
                         <Button
                             variant='contained'
                             size='small'
-                            onClick={() => router.push(`/devolver/${row._id}`)}
+                            onClick={handleDevolver}
                             startIcon={<Icon icon='mdi:clipboard-arrow-up' fontSize={20} />}
                             sx={{
                                 minWidth: { xs: 35, sm: 90 },

@@ -16,6 +16,7 @@ import { instance } from "src/configs/axios";
 import AddItem from "./AddItem";
 import SelectActivos from "./SelectActivos";
 import { PDFEntrega } from "src/utils/PDF-entrega";
+import Can from "src/layouts/components/acl/Can";
 
 interface SubCategoryType {
     _id?: string
@@ -70,6 +71,7 @@ interface ActivosType {
 }
 
 interface InfoEntegaType {
+    _id?: string
     code: string
     date: string
     time: string
@@ -103,10 +105,10 @@ interface Props {
     limit: number
     page: number
     mode: 'create' | 'update'
-    id?: string
+    code?: string
 }
 
-const Register = ({ page, limit, mode = 'create', id, open, toggle }: Props) => {
+const Register = ({ page, limit, mode = 'create', code, open, toggle }: Props) => {
 
     const [pageSize, setPageSize] = useState(10);
     const [file, setFile] = useState<File | null>(null);
@@ -228,7 +230,7 @@ const Register = ({ page, limit, mode = 'create', id, open, toggle }: Props) => 
                     toggle();
                 });
         } else {
-            dispatch(updateEntrega({ id: id || '', data: formData, filters: { skip: page * limit, limit } }))
+            dispatch(updateEntrega({ id: entrega?._id || '', data: formData, filters: { skip: page * limit, limit } }))
                 .unwrap()
                 .then(() => {
                     setFile(null);
@@ -289,7 +291,7 @@ const Register = ({ page, limit, mode = 'create', id, open, toggle }: Props) => 
     useEffect(() => {
         const fetchEntrega = async () => {
             try {
-                const res = await instance.get(`/entregas/${id}`)
+                const res = await instance.get(`/entregas/${code}`)
                 const { activos, ...rest } = res.data
                 setEntrega(rest || null);
                 setSelectActivos(activos || [])
@@ -297,10 +299,10 @@ const Register = ({ page, limit, mode = 'create', id, open, toggle }: Props) => 
                 console.log(e)
             }
         }
-        if (open && id && mode === 'update') {
+        if (open && code && mode === 'update') {
             fetchEntrega()
         }
-    }, [open, id, mode])
+    }, [open, code, mode])
 
     const handleCancel = () => {
         setFile(null);
@@ -532,16 +534,20 @@ const Register = ({ page, limit, mode = 'create', id, open, toggle }: Props) => 
                                         style={{ display: 'none' }}
                                         onChange={handleFileChange}
                                     />
-                                    <Button
-                                        variant="outlined"
-                                        startIcon={<Icon icon='mdi:upload' />}
-                                        onClick={handleUploadClick}
-                                    >
-                                        Subir Documento
-                                    </Button>
-                                    <Button variant="contained" onClick={() => PDFEntrega(entrega, selectActivos)} startIcon={<Icon icon='mdi:printer' />}>
-                                        Imprimir Documento
-                                    </Button>
+                                    <Can I="upload" a="entrega">
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<Icon icon='mdi:upload' />}
+                                            onClick={handleUploadClick}
+                                        >
+                                            Subir Documento
+                                        </Button>
+                                    </Can>
+                                    <Can I="print" a="entrega">
+                                        <Button variant="contained" onClick={() => PDFEntrega(entrega, selectActivos)} startIcon={<Icon icon='mdi:printer' />}>
+                                            Imprimir Documento
+                                        </Button>
+                                    </Can>
                                 </CardActions>
                             </CardContent>
                         </Card>
@@ -602,34 +608,38 @@ const Register = ({ page, limit, mode = 'create', id, open, toggle }: Props) => 
                 >
                     Cancelar
                 </Button>
-                <Button
-                    size='large'
-                    onClick={handleSave}
-                    variant='contained'
-                    color="success"
-                    startIcon={<Icon icon='mdi:content-save' />}
-                >
-                    Guardar
-                </Button>
+                <Can I={mode} a="entrega">
+                    <Button
+                        size='large'
+                        onClick={handleSave}
+                        variant='contained'
+                        color="success"
+                        startIcon={<Icon icon='mdi:content-save' />}
+                    >
+                        {mode === 'create' ? 'Guardar' : 'Actualizar'}
+                    </Button>
+                </Can>
             </Box>
-            <AddDraw
-                open={openInfo}
-                toggle={toggleInfo}
-                title={entrega?.location ?
-                    'Editar información de la entrega' :
-                    'Agregar información de la entrega'}>
-                <AddInfo entrega={entrega} open={openInfo} setEntrega={setEntrega} toggle={toggleInfo} />
-            </AddDraw>
-            <AddDraw
-                open={openAdduser}
-                toggle={toggleAdduser}
-                title={entrega?.user_rec ?
-                    'Editar usuario' :
-                    'Agregar información de la entrega'}>
-                <AddUser entrega={entrega} open={openAdduser} setEntrega={setEntrega} toggle={toggleAdduser} />
-            </AddDraw>
-            <AddItem open={openAddItem} toggle={toggleAddItem} setSelectActivos={setSelectActivos} />
-            <SelectActivos openpage={openSelectActivos} toggle={toggleSelectActivos} setSelectActivos={setSelectActivos} />
+            <Can I={mode} a="entrega">
+                <AddDraw
+                    open={openInfo}
+                    toggle={toggleInfo}
+                    title={entrega?.location ?
+                        'Editar información de la entrega' :
+                        'Agregar información de la entrega'}>
+                    <AddInfo entrega={entrega} open={openInfo} setEntrega={setEntrega} toggle={toggleInfo} />
+                </AddDraw>
+                <AddDraw
+                    open={openAdduser}
+                    toggle={toggleAdduser}
+                    title={entrega?.user_rec ?
+                        'Editar usuario' :
+                        'Agregar información de la entrega'}>
+                    <AddUser entrega={entrega} open={openAdduser} setEntrega={setEntrega} toggle={toggleAdduser} />
+                </AddDraw>
+                <AddItem open={openAddItem} toggle={toggleAddItem} setSelectActivos={setSelectActivos} />
+                <SelectActivos openpage={openSelectActivos} toggle={toggleSelectActivos} setSelectActivos={setSelectActivos} />
+            </Can>
         </Box>
     )
 }

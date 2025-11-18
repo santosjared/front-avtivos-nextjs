@@ -2,7 +2,7 @@ import { GradeType } from "src/types/types"
 
 export type ErrCallbackType = (err: { [key: string]: string }) => void
 
-export type Actions = 'create' | 'read' | 'update' | 'delete' | 'permissions' | 'details' | 'print' | 'calcular' | 'up' | 'dow'
+export type Actions = 'create' | 'read' | 'update' | 'delete' | 'permissions' | 'details' | 'print' | 'calcular' | 'up' | 'dow' | 'upload'
 export type Subjects = 'dashboard' | 'users' | 'roles' | 'activos' | 'contable' | 'entrega' | 'devolucion' | 'bitacora' | 'depreciacion'
 
 export type LoginParams = {

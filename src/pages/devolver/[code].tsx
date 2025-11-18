@@ -15,7 +15,10 @@ import AddItem from "src/views/pages/devolver/AddItem";
 import SelectActivos from "src/views/pages/devolver/SelectActivos";
 import { useRouter } from "next/router";
 import { PDFDevuelto } from "src/utils/PDF-devuelto";
-import { addDevolucion } from "src/store/devolucion";
+import { addDevolucion, updateDevolucion } from "src/store/devolucion";
+import Swal from 'sweetalert2'
+import { setState } from "src/store/devolver";
+import Can from "src/layouts/components/acl/Can";
 
 
 interface SubCategoryType {
@@ -70,7 +73,8 @@ interface ActivosType {
     subcategory: SubCategoryType | null
 }
 
-interface InfoEntegaType {
+interface InfoDevolverType {
+    _id?: string
     code: string
     date: string
     time: string
@@ -101,7 +105,7 @@ const Devolver = () => {
     const [pageSize, setPageSize] = useState(10);
     const [file, setFile] = useState<File | null>(null);
     const [fileError, setFileError] = useState<string | null>(null);
-    const [devolucion, setDevolucion] = useState<InfoEntegaType | null>(null)
+    const [devolucion, setDevolucion] = useState<InfoDevolverType | null>(null)
     const [selectActivos, setSelectActivos] = useState<ActivosType[]>([])
     const [openInfo, setOpenInfo] = useState<boolean>(false)
     const [openAddItem, setOpenAddItem] = useState<boolean>(false)
@@ -117,6 +121,7 @@ const Devolver = () => {
     const toggleSelectActivos = () => seOpenSelectActivos(!openSelectActivos)
 
     const { user } = useSelector((state: RootState) => state.auth)
+    const { mode } = useSelector((state: RootState) => state.devolver)
 
     const router = useRouter()
 
@@ -148,70 +153,66 @@ const Devolver = () => {
     };
 
     const handleSave = () => {
-        let error = false
+        let error = false;
+        const newErrors: any = {};
+
         if (!file) {
             setFileError('Debe adjuntar un documento PDF antes de confirmar.');
             error = true;
         }
-        if (!devolucion?.code) {
-            setErros({ ...errors!, code: 'El codigo es obligatorio' });
-            error = true;
-        }
-        if (!devolucion?.date) {
-            setErros({ ...errors!, date: 'La fecha de entrega es obligatorio' });
-            error = true;
-        }
-        if (!devolucion?.time) {
-            setErros({ ...errors!, time: 'La hora de entrega es obligatorio' });
-            error = true;
-        }
-        if (!devolucion?.user_dev) {
-            setErros({ ...errors!, user_en: 'La informacion del usuario que entrega es obligatorio' });
-            error = true;
-        }
-        if (!devolucion?.user_rec) {
-            setErros({ ...errors!, user_rec: 'El usuario que recibe es obligatorio' });
-            error = true;
-        }
+        if (!devolucion?.code) newErrors.code = 'El código es obligatorio';
+        if (!devolucion?.date) newErrors.date = 'La fecha de entrega es obligatoria';
+        if (!devolucion?.time) newErrors.time = 'La hora de entrega es obligatoria';
+        if (!devolucion?.user_dev) newErrors.user_dev = 'El usuario que entrega es obligatorio';
+        if (!devolucion?.user_rec) newErrors.user_rec = 'El usuario que recibe es obligatorio';
         if (selectActivos.length === 0) {
-            setErrorAc('Selecione un activo para entregar');
+            setErrorAc('Seleccione un activo para entregar');
             error = true;
         }
 
-        if (error) {
-            return;
+        if (Object.keys(newErrors).length > 0) {
+            setErros({ ...errors, ...newErrors });
+            error = true;
         }
+
+        if (error) return;
 
         const formData = new FormData();
-
         formData.append('code', devolucion?.code ?? '');
         formData.append('date', devolucion?.date ?? '');
         formData.append('time', devolucion?.time ?? '');
         formData.append('user_rec', devolucion?.user_rec?._id ?? '');
-        formData.append('user_dev', devolucion?.user_dev?._id || '')
+        formData.append('user_dev', devolucion?.user_dev?._id ?? '');
         formData.append('description', devolucion?.description?.trim() ?? '');
+        selectActivos.forEach(activo => activo._id && formData.append('activos[]', activo._id));
+        if (file) formData.append('document', file);
 
-        selectActivos.forEach(activo => {
-            if (activo._id) formData.append('activos[]', activo._id);
-        });
-        if (file) {
-            formData.append('document', file);
+        if (mode === 'update' && devolucion?._id) {
+            dispatch(updateDevolucion({ data: formData, id: devolucion._id }))
+                .unwrap()
+                .then(() => {
+                    limpiar();
+                    router.back();
+                })
+            return;
         }
 
         dispatch(addDevolucion({ data: formData }))
             .unwrap()
             .then(() => {
-                setFile(null);
-                setDevolucion(null);
-                setSelectActivos([]);
+                limpiar();
                 router.back();
-            });
+            })
+    };
+
+    const limpiar = () => {
+        setFile(null);
+        setDevolucion(null);
+        setSelectActivos([]);
     };
 
     const handleDelete = async (id: string) => {
-
         setSelectActivos(prev => prev.filter(item => item._id !== id));
-
     };
 
     useEffect(() => {
@@ -226,30 +227,77 @@ const Devolver = () => {
                 console.log(e)
             }
         }
-        if (router.query.id) {
+        if (router.query.code) {
             fetchUser()
         }
-    }, [router.query.id])
+    }, [router.query.code])
 
     useEffect(() => {
         const fetchEntrega = async () => {
             try {
-                const res = await instance.get(`/entregas/${router.query.id}`)
-                const { activos, user_rec, code } = res.data
-                setDevolucion(prev => ({
-                    ...prev!,
+                const res = await instance.get(`/entregas/${router.query.code}`)
+                const dev = await instance.get(`/devolucion/${router.query.code}`)
+
+
+                const { activos, user_rec, code } = res.data;
+                const devolucionBase = {
                     user_dev: user_rec,
                     code
-                }));
-                setActivos(activos || [])
+                };
+
+                if (dev.data && mode !== 'update') {
+                    Swal.fire({
+                        title: "Registro existente",
+                        text: "Esta entrega ya fue registrada como devuelta. ¿Desea editar la información?",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: theme.palette.success.main,
+                        cancelButtonColor: theme.palette.error.main,
+                        confirmButtonText: "Sí, editar"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            dispatch(setState('update'));
+                            setDevolucion(prev => ({
+                                ...prev!, ...devolucionBase,
+                                date: dev.data.date,
+                                time: dev.data.time,
+                                _id: dev.data._id,
+                                description: dev.data.description
+                            }));
+                            setActivos(activos || []);
+                            setSelectActivos(dev.data?.activos || []);
+                            return;
+                        }
+                        router.back()
+
+                    });
+                    return;
+                }
+
+                if (mode === 'update') {
+                    setSelectActivos(dev.data?.activos || []);
+                    setDevolucion(prev => ({
+                        ...prev!, ...devolucionBase,
+                        date: dev.data.date,
+                        time: dev.data.time,
+                        _id: dev.data._id,
+                        description: dev.data.description
+                    }));
+                    setActivos(activos || []);
+                    return;
+                }
+
+                setDevolucion(prev => ({ ...prev!, ...devolucionBase }));
+                setActivos(activos || []);
+
             } catch (e) {
                 console.log(e)
             }
         }
-        if (router.query.id) {
+        if (router.query.code) {
             fetchEntrega()
         }
-    }, [router.query.id])
+    }, [router.query.code])
 
     const handleCancel = () => {
         setFile(null);
@@ -471,16 +519,20 @@ const Devolver = () => {
                                         style={{ display: 'none' }}
                                         onChange={handleFileChange}
                                     />
-                                    <Button
-                                        variant="outlined"
-                                        startIcon={<Icon icon='mdi:upload' />}
-                                        onClick={handleUploadClick}
-                                    >
-                                        Subir Documento
-                                    </Button>
-                                    <Button variant="contained" onClick={() => PDFDevuelto(devolucion, selectActivos)} startIcon={<Icon icon='mdi:printer' />}>
-                                        Imprimir Documento
-                                    </Button>
+                                    <Can I="upload" a="devolucion">
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<Icon icon='mdi:upload' />}
+                                            onClick={handleUploadClick}
+                                        >
+                                            Subir Documento
+                                        </Button>
+                                    </Can>
+                                    <Can I="print" a="devolucion">
+                                        <Button variant="contained" onClick={() => PDFDevuelto(devolucion, selectActivos)} startIcon={<Icon icon='mdi:printer' />}>
+                                            Imprimir Documento
+                                        </Button>
+                                    </Can>
                                 </CardActions>
                             </CardContent>
                         </Card>
@@ -541,15 +593,17 @@ const Devolver = () => {
                 >
                     Cancelar
                 </Button>
-                <Button
-                    size='large'
-                    onClick={handleSave}
-                    variant='contained'
-                    color="success"
-                    startIcon={<Icon icon='mdi:content-save' />}
-                >
-                    Guardar
-                </Button>
+                <Can I={mode} a="devolucion">
+                    <Button
+                        size='large'
+                        onClick={handleSave}
+                        variant='contained'
+                        color="success"
+                        startIcon={<Icon icon='mdi:content-save' />}
+                    >
+                        {mode === 'create' ? 'Guardar' : 'Actualizar'}
+                    </Button>
+                </Can>
             </Box>
             <AddDraw
                 open={openInfo}

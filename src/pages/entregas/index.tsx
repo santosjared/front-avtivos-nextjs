@@ -16,6 +16,7 @@ import Register from 'src/views/pages/entregas/Register'
 import { instance } from 'src/configs/axios'
 import { PDFEntrega } from 'src/utils/PDF-entrega'
 import Can from 'src/layouts/components/acl/Can'
+import { setState } from 'src/store/devolver'
 
 interface LocationType {
     _id: string
@@ -107,7 +108,7 @@ const Borrowing = () => {
     const [page, setPage] = useState<number>(0)
     const [field, setField] = useState<string>('')
     const [mode, setMode] = useState<'create' | 'update'>('create')
-    const [id, setId] = useState<string>('')
+    const [code, setCode] = useState<string>('')
     const [openRegiser, setOpenRegister] = useState<boolean>(false)
 
     const toggleRegister = () => setOpenRegister(!openRegiser)
@@ -272,7 +273,13 @@ const Borrowing = () => {
             setAnchorEl(null)
         }
 
-        const handleDow = async () => {
+        const handleDevolver = () => {
+            setAnchorEl(null);
+            dispatch(setState('create'))
+            router.push(`/devolver/${entrega.code}`)
+        }
+
+        const handleDelete = async () => {
             setAnchorEl(null)
             const confirme = await Swal.fire({
                 title: `¿Estas seguro de eliminar la entrega del activo con el código: ${entrega.code || ''} ?`,
@@ -291,7 +298,7 @@ const Borrowing = () => {
         const print = async () => {
             setAnchorEl(null)
             try {
-                const res = await instance.get(`/entregas/${entrega._id}`)
+                const res = await instance.get(`/entregas/${entrega.code}`)
                 const { activos, ...rest } = res.data
                 PDFEntrega(rest || null, activos || [])
             } catch (e) {
@@ -305,7 +312,7 @@ const Borrowing = () => {
         }
 
         const handleEdit = () => {
-            setId(entrega._id || '');
+            setCode(entrega.code);
             setMode('update');
             setAnchorEl(null);
             toggleRegister()
@@ -338,13 +345,13 @@ const Borrowing = () => {
                         </MenuItem>
                     </Can>
                     <Can I='delete' a='entrega'>
-                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleDow}>
+                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleDelete}>
                             <Icon icon='mdi:delete' fontSize={20} color={theme.palette.error.main} />
                             Eliminar
                         </MenuItem>
                     </Can>
                     <Can I='create' a='devolucion'>
-                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={() => router.push(`/devolver/${entrega._id}`)}>
+                        <MenuItem sx={{ '& svg': { mr: 2 } }} onClick={handleDevolver}>
                             <Icon icon='mdi:clipboard-arrow-up' fontSize={20} color={theme.palette.success.main} />
                             devolver
                         </MenuItem>
@@ -368,7 +375,7 @@ const Borrowing = () => {
                 mode={mode}
                 limit={pageSize}
                 page={page}
-                id={id}
+                code={code}
             /> :
                 (<Grid container spacing={6}>
                     <Grid item xs={12}>
