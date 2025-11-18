@@ -60,11 +60,9 @@ interface InfoEntegaType {
     code: string
     date: string
     time: string
-    user_en: UserType | null
+    user_dev: UserType | null
     user_rec: UserType | null
-    location: LocationType | null
     description: string
-    otherLocation: string
 }
 
 interface ActivosType {
@@ -81,7 +79,7 @@ interface ActivosType {
     subcategory: SubCategoryType | null
 }
 
-export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) => {
+export const PDFDevuelto = (info: InfoEntegaType | null, activos: ActivosType[]) => {
 
     const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
 
@@ -221,7 +219,7 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
     doc.setFont("helvetica", "bolditalic");
     doc.setFontSize(8);
     doc.setTextColor(0, 0, 0);
-    const title = `ACTA DE ENTREGA`
+    const title = `ACTA DE DEVOLUCIÓN`
     const titleWidth = doc.getTextWidth(title);
     const titleX = marginLeft + (usableWidth - titleWidth) / 2;
     let cursorY = marginTop + 10;
@@ -236,25 +234,26 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
         { text: `${info?.time || '00:00'} `, style: 'bolditalic' },
         { text: `del día ` },
         { text: `${formatear(info?.date || '17/11/2025')} `, style: 'bolditalic' },
-        { text: `se procede a la ENTREGA DE BIENES de conformidad con las disposiciones del ` },
+        { text: `se procede a la DEVOLUCIÓN DE BIENES de conformidad con las disposiciones del ` },
         { text: `D.S. Nº 0181, `, style: 'bolditalic' },
-        { text: `Normas Básicas del Sistema de Administración de Bienes y Servicios, en particular los artículos relativos al Documento de Entrega y la Liberación de Responsabilidad.` }
+        { text: `Normas Básicas del Sistema de Administración de Bienes y Servicios, en particular las normas relativas a la restitución de bienes y la liberación de responsabilidad (artículo 148).` }
     ]);
 
     cursorY += 10
 
-    drawJustifiedText([{ text: `ENTREGA:`, style: 'bolditalic' }]);
+    drawJustifiedText([{ text: `DEVUELVE:`, style: 'bolditalic' }]);
 
     cursorY += 10
 
     drawJustifiedText([
         { text: 'El/la suscrito(a)' },
-        { text: `${info?.user_en?.grade?.name || ''} ${info?.user_en?.name || ''} ${info?.user_en?.lastName || ''}`, style: 'bolditalic' },
+        { text: `${info?.user_dev?.grade?.name || ''} ${info?.user_dev?.name || ''} ${info?.user_dev?.lastName || ''}`, style: 'bolditalic' },
         { text: '\u00A0' },
         { text: 'con cédula de identidad' },
-        { text: `${info?.user_en?.ci || '[              ]'} `, style: 'bolditalic' },
-        { text: 'hace la entrega de los siguientes bienes a la ' },
-        { text: `Unidad de: ${info?.otherLocation || info?.location?.name || ''}. `, style: 'bolditalic' }
+        { text: `${info?.user_dev?.ci || '[              ]'} `, style: 'bolditalic' },
+        { text: 'entrega los siguientes bienes a la' },
+        { text: `Unidad o Responsable de Activos Fijos, `, style: 'bolditalic' },
+        { text: 'según la relación que sigue: ' },
     ])
 
     cursorY += 10
@@ -268,16 +267,16 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
         { text: `${info?.user_rec?.grade?.name || ''} ${info?.user_rec?.name || ''} ${info?.user_rec?.lastName || ''} `, style: 'bolditalic' },
         { text: ' con cédula de identidad' },
         { text: `${info?.user_rec?.ci || '[              ]'}, `, style: 'bolditalic' },
-        { text: ' recibe los bienes bajo su responsabilidad de custodia y uso conforme a las normas vigentes.' },
+        { text: ' recibe de vuelta los bienes antes descritos.' },
     ])
 
     cursorY += 10
 
-    drawJustifiedText([{ text: `DETALLE DE LOS BIENES ENTREGADOS:`, style: 'bolditalic' }]);
+    drawJustifiedText([{ text: `DETALLE DE LA DEVOLUCIÓN DE LOS BIENES:`, style: 'bolditalic' }]);
 
 
 
-    const head = [['CÓDIGO', 'NOMBRE', 'LUGAR DEL ACTIVO', 'LUGAR DE ENTREGA', 'OBSERVACIONES', 'DESCRIPCIÓN']];
+    const head = [['CÓDIGO', 'NOMBRE', 'OBSERVACIONES', 'DESCRIPCIÓN']];
 
     const body: any[] = [];
 
@@ -285,8 +284,6 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
         body.push([
             item.code ?? "",
             item.name ?? "",
-            item.location?.name ?? "",
-            info?.otherLocation || info?.location?.name || "",
             " ",
             index === 0
                 ? {
@@ -297,7 +294,6 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
                 : ""
         ]);
     });
-
 
     autoTable(doc, {
         startY: cursorY,
@@ -330,9 +326,9 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
     cursorY = doc.lastAutoTable.finalY + 20;
 
     drawJustifiedText([
-        { text: "Se deja constancia que la entrega se realiza en " },
+        { text: "Se deja constancia que la devolución de los bienes que se realiza en " },
         { text: `perfectas condiciones `, style: "bolditalic" },
-        { text: `de uso o conforme a lo observado en la columna de “Observaciones”. Ambas partes liberan de responsabilidad respecto a daños o pérdidas posteriores a la entrega, salvo los estipulados en la normativa vigente.` },
+        { text: `de uso o conforme a lo observado en la columna de “Observaciones”. Ambas partes liberan de responsabilidad respecto a daños o pérdidas posteriores de la devolución, salvo los estipulados en la normativa vigente.` },
     ]);
 
     const firmasHeight = 70;
@@ -362,7 +358,7 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
 
     const nombreRec = `${info?.user_rec?.grade?.name || ""} ${info?.user_rec?.name || ""} ${info?.user_rec?.lastName || ""}`;
 
-    const nombreEnt = `${info?.user_en?.grade?.name || ""} ${info?.user_en?.name || ""} ${info?.user_en?.lastName || ""}`;
+    const nombreEnt = `${info?.user_dev?.grade?.name || ""} ${info?.user_dev?.name || ""} ${info?.user_dev?.lastName || ""}`;
 
     const nombreRecWidth = doc.getTextWidth(nombreRec);
     const nombreEntWidth = doc.getTextWidth(nombreEnt);

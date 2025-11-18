@@ -324,7 +324,7 @@ const AddInfo = ({ toggle, open, entrega, setEntrega }: Props) => {
                                     render={({ field: { value, onChange } }) => (
                                         <TextField
                                             label='Descripción'
-                                            placeholder='Descripción del rol (opcional)'
+                                            placeholder='Descripción de la entrega (opcional)'
                                             onChange={onChange}
                                             error={Boolean(errors.description)}
                                             value={value}

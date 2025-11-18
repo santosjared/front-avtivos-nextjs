@@ -76,9 +76,7 @@ interface DevolucionType {
     code: string
     date: string
     time: string
-    grade: GradeType
-    name: string
-    lastName: string
+    user_dev: UserType
     user_rec: UserType
     activos: ActivosType[]
     documentUrl?: string
@@ -119,7 +117,7 @@ const Devolucion = () => {
         dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
     }, [pageSize, page])
 
-    const handleFilters = () => {
+    const handleFilters = (field: string) => {
         dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
     }
 
@@ -172,7 +170,7 @@ const Devolucion = () => {
             field: 'user_dev',
             headerName: 'Usuario que devuelve',
             renderCell: ({ row }: CellType) => {
-                const fullname = `${row.grade?.name || ''} ${row.name || ''} ${row.lastName || ''}`
+                const fullname = `${row.user_dev?.grade?.name || ''} ${row.user_dev?.name || ''} ${row.user_dev?.lastName || ''}`
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -358,7 +356,7 @@ const Devolucion = () => {
 
                                         <Button
                                             variant="outlined"
-                                            onClick={handleFilters}
+                                            onClick={() => handleFilters(field)}
                                             startIcon={<Icon icon='mdi:search' />}
                                             sx={{
                                                 borderRadius: 0,
@@ -370,6 +368,7 @@ const Devolucion = () => {
 
                                         <Button
                                             variant="contained"
+                                            onClick={() => handleFilters('')}
                                             sx={{
                                                 borderTopLeftRadius: 0,
                                                 borderBottomLeftRadius: 0

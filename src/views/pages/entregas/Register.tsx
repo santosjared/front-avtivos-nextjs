@@ -9,8 +9,6 @@ import { useDispatch } from "react-redux";
 import { AppDispatch, RootState } from "src/store";
 import { addEntrega, updateEntrega } from "src/store/entrega";
 import { useSelector } from "react-redux";
-import { resetBorrowing } from "src/store/borrowing";
-import { resetBorrowingRegister } from "src/store/borrowing/register";
 import AddDraw from "src/components/draw";
 import AddInfo from "./AddInfo";
 import AddUser from "./AddUser";
@@ -18,8 +16,6 @@ import { instance } from "src/configs/axios";
 import AddItem from "./AddItem";
 import SelectActivos from "./SelectActivos";
 import { PDFEntrega } from "src/utils/PDF-entrega";
-import { EntryType } from "perf_hooks";
-
 
 interface SubCategoryType {
     _id?: string

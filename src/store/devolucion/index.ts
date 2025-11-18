@@ -51,9 +51,7 @@ interface DevolucionType {
     code: string
     date: string
     time: string
-    grade: GradeType
-    name: string
-    lastName: string
+    user_dev: UserType
     user_rec: UserType
     activos: ActivosType[]
     documentUrl?: string
@@ -65,31 +63,13 @@ interface FetchParams {
     limit?: number
     field?: string
 }
-interface EntregaType {
-    code: string
-    date: string
-    time: string
-    grade: GradeType
-    name: string
-    lastName: string
-    user_en: UserType
-    location: LocationType
-    activos: ActivosType[]
-    documentUrl?: string
-    description?: string
-}
-
 interface InicialStateType {
     data: DevolucionType[]
     total: number
-    entregas: EntregaType[]
-    totalEntregas: number
 }
 
 const initialState: InicialStateType = {
     data: [],
-    entregas: [],
-    totalEntregas: 0,
     total: 0,
 }
 
@@ -114,31 +94,10 @@ export const fetchData = createAsyncThunk(
     }
 )
 
-export const fetchDataEntrega = createAsyncThunk(
-    'devolucion/fetchDataEntrega',
-    async (filters?: FetchParams) => {
-        try {
-            const response = await instance.get('/devolucion/entregas', {
-                params: filters,
-            })
-            return response.data
-        } catch (e: any) {
-            console.log(e)
-            Swal.fire({
-                title: '¡Error!',
-                text: `Error al intentar traer los datos. Código de error: ${e.response?.status ?? 'desconocido'
-                    }. Por favor, comuníquese con el administrador del sistema.`,
-                icon: 'error',
-            });
-            return null
-        }
-    }
-)
-
 export const addDevolucion = createAsyncThunk(
     'devolucion/addDevolucion',
     async (
-        data: { data: FormData; filtrs: FetchParams },
+        data: { data: FormData; filters?: FetchParams },
         { dispatch }
     ) => {
         try {
@@ -150,7 +109,7 @@ export const addDevolucion = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response.data
         } catch (e: any) {
             console.log(e)
@@ -168,7 +127,7 @@ export const addDevolucion = createAsyncThunk(
 export const updateDevolucion = createAsyncThunk(
     'devolucion/updateDevolucion',
     async (
-        data: { id: string; data: FormData; filtrs: FetchParams },
+        data: { id: string; data: FormData; filters?: FetchParams },
         { dispatch }
     ) => {
         try {
@@ -180,7 +139,7 @@ export const updateDevolucion = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filtrs))
+            dispatch(fetchData(data.filters))
             return response.data
         } catch (e: any) {
             console.log(e)
@@ -231,10 +190,6 @@ export const devolucionSlice = createSlice({
             .addCase(fetchData.fulfilled, (state, action) => {
                 state.data = action.payload?.result || []
                 state.total = action.payload?.total || 0
-            })
-            .addCase(fetchDataEntrega.fulfilled, (state, action) => {
-                state.entregas = action.payload?.result || []
-                state.totalEntregas = action.payload?.total || 0
             })
     },
 })
