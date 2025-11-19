@@ -54,7 +54,7 @@ const navigation = (): VerticalNavItemsType => {
     },
     {
       title: 'Depreciación',
-      path: '/depreciation',
+      path: '/depreciacion',
       action: 'read',
       subject: 'depreciacion',
       icon: 'mdi:alarm-panel-outline'

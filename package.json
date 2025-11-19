@@ -46,7 +46,7 @@
     "i18next-browser-languagedetector": "7.0.0",
     "i18next-http-backend": "2.0.0",
     "jsonwebtoken": "8.5.1",
-    "jspdf": "^3.0.3",
+    "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "keen-slider": "6.8.3",
     "lodash": "^4.17.21",
