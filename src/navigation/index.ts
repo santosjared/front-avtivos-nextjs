@@ -61,7 +61,7 @@ const navigation = (): VerticalNavItemsType => {
     },
     {
       title: 'Bitacoras',
-      path: '/bitacora',
+      path: '/bitacoras',
       action: 'read',
       subject: 'bitacora',
       icon: 'mdi:dns-outline'

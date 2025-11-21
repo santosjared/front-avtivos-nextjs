@@ -1,90 +1,28 @@
-import React, { useState, useEffect, MouseEvent } from 'react'
-import { Box, Button, Card, CardContent, Divider, Grid, IconButton, Menu, MenuItem, TextField, Tooltip, Typography, useTheme } from '@mui/material'
+import React, { useState, useEffect } from 'react'
+import { Box, Button, Card, Divider, Grid, TextField, Tooltip, Typography } from '@mui/material'
 import { DataGrid } from "@mui/x-data-grid"
 import { useDispatch } from 'react-redux'
-import Icon from 'src/@core/components/icon'
 import { RootState, AppDispatch } from 'src/store'
 import { useSelector } from 'react-redux'
-import { GradeType, UserType } from 'src/types/types'
-import Swal from 'sweetalert2'
-import { deleteEntrega, fetchData } from 'src/store/entrega'
-import { styled } from '@mui/material/styles'
-import Link from 'next/link'
 import { hexToRGBA } from "src/@core/utils/hex-to-rgba";
-import { instance } from 'src/configs/axios'
+import { fetchData } from 'src/store/depreciacion'
+import Can from 'src/layouts/components/acl/Can'
 
-interface LocationType {
-    _id: string
-    name: string
-}
-
-interface RegisterType {
-    date: string
-    time: string
-    grade: GradeType | null
-    name: string
-    lastName: string
-    location: LocationType | null
-    description: string
-    otherLocation: string
-    otherGrade: string
-
-}
-
-interface SubCategoryType {
+interface DepreciaCionType {
     _id?: string
-    name: string
-    util: number
-}
-
-interface ContableType {
-    _id: string
-    name: string,
-    util: number,
-    subcategory: SubCategoryType[]
-    description?: string
-}
-
-interface StatusType {
-    _id: string
-    name: string
-}
-
-interface ResponsableType {
-    _id: string
-    grade: GradeType
-    name: string
-    lastName: string
-}
-
-interface ActivosType {
-    _id?: string
-    code: string,
-    responsable: ResponsableType | null,
-    name: string,
-    location: LocationType | null,
-    price_a: number,
-    date_a: string,
-    imageUrl: string | null,
-    status: StatusType | null
-    category: ContableType | null
-    subcategory: SubCategoryType | null
-}
-
-interface EntregaType {
-    _id?: string
-    code: string
-    date: string
-    time: string
-    user_en: UserType | null
-    user_rec: UserType | null
-    location: LocationType
-    documentUrl?: string
-    description?: string
+    nombre: string
+    fecha_a: string
+    precio_ac: number
+    ufv_inicial: number
+    ufv_final: number
+    diferencia_ufv: number
+    precio_actualizado: number
+    deprec_acomulada: number
+    neto: number
 }
 
 interface CellType {
-    row: EntregaType
+    row: DepreciaCionType
 }
 
 const columns = [
@@ -95,8 +33,8 @@ const columns = [
         headerName: 'Nombre del activo',
         renderCell: ({ row }: CellType) => {
             return (
-                <Tooltip title={row.code}>
-                    <Typography variant='body2' noWrap>{row.code}</Typography>
+                <Tooltip title={row.nombre}>
+                    <Typography variant='body2' noWrap>{row.nombre}</Typography>
                 </Tooltip>
             )
         }
@@ -107,7 +45,7 @@ const columns = [
         field: 'fecha_a',
         headerName: 'fecha de adquisición',
         renderCell: ({ row }: CellType) => {
-            const date = new Date(row.date)
+            const date = new Date(row.fecha_a)
             const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
             return (
                 <Tooltip title={formatted}>
@@ -123,8 +61,8 @@ const columns = [
         headerName: 'Precio del activo',
         renderCell: ({ row }: CellType) => {
             return (
-                <Tooltip title={row.time}>
-                    <Typography variant='body2' noWrap>{row.time}</Typography>
+                <Tooltip title={row.precio_ac}>
+                    <Typography variant='body2' noWrap>{row.precio_ac}</Typography>
                 </Tooltip>
 
             )
@@ -136,10 +74,9 @@ const columns = [
         field: 'ufv_inicial',
         headerName: 'UFV inicial',
         renderCell: ({ row }: CellType) => {
-            const fullname = `${row.user_en?.grade?.name || ''} ${row.user_en?.name || ''} ${row.user_en?.lastName || ''}`
             return (
-                <Tooltip title={fullname}>
-                    <Typography variant='body2' noWrap>{fullname}</Typography>
+                <Tooltip title={row.ufv_inicial}>
+                    <Typography variant='body2' noWrap>{row.ufv_inicial}</Typography>
                 </Tooltip>
             )
         }
@@ -151,10 +88,10 @@ const columns = [
         sortable: false,
         headerName: 'UFV final',
         renderCell: ({ row }: CellType) => {
-            const fullname = `${row.user_rec?.grade?.name || ''} ${row.user_rec?.name || ''} ${row.user_rec?.lastName || ''}`
+
             return (
-                <Tooltip title={fullname}>
-                    <Typography variant='body2' noWrap>{fullname}</Typography>
+                <Tooltip title={row.ufv_final}>
+                    <Typography variant='body2' noWrap>{row.ufv_final}</Typography>
                 </Tooltip>
 
             )
@@ -167,8 +104,8 @@ const columns = [
         headerName: 'Diferencia UFV',
         renderCell: ({ row }: CellType) => {
             return (
-                <Tooltip title={row.location?.name}>
-                    <Typography variant='body2' noWrap>{row.location?.name}</Typography>
+                <Tooltip title={row.diferencia_ufv}>
+                    <Typography variant='body2' noWrap>{row.diferencia_ufv}</Typography>
                 </Tooltip>
 
             )
@@ -181,8 +118,8 @@ const columns = [
         headerName: 'precio Actualizado',
         renderCell: ({ row }: CellType) => {
             return (
-                <Tooltip title={row.location?.name}>
-                    <Typography variant='body2' noWrap>{row.location?.name}</Typography>
+                <Tooltip title={row.precio_actualizado}>
+                    <Typography variant='body2' noWrap>{row.precio_actualizado}</Typography>
                 </Tooltip>
 
             )
@@ -195,8 +132,8 @@ const columns = [
         headerName: 'Depreciación acomulada',
         renderCell: ({ row }: CellType) => {
             return (
-                <Tooltip title={row.location?.name}>
-                    <Typography variant='body2' noWrap>{row.location?.name}</Typography>
+                <Tooltip title={row.deprec_acomulada}>
+                    <Typography variant='body2' noWrap>{row.deprec_acomulada}</Typography>
                 </Tooltip>
 
             )
@@ -209,14 +146,33 @@ const columns = [
         headerName: 'Valor Neto',
         renderCell: ({ row }: CellType) => {
             return (
-                <Tooltip title={row.location?.name}>
-                    <Typography variant='body2' noWrap>{row.location?.name}</Typography>
+                <Tooltip title={row.neto}>
+                    <Typography variant='body2' noWrap>{row.neto}</Typography>
                 </Tooltip>
 
             )
         }
     },
 ]
+
+const formatearConDia = (f: string | Date) => {
+    const fecha = new Date(
+        typeof f === "string" ? f + "T00:00:00-04:00" : f
+    );
+
+    const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const meses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+
+    const diaSemana = dias[fecha.getDay()];
+    const diaMes = fecha.getDate();
+    const mes = meses[fecha.getMonth()];
+    const anio = fecha.getFullYear();
+
+    return `${diaSemana} ${diaMes} de ${mes} de ${anio}`;
+};
 
 const today = new Date().toISOString().split('T')[0]
 const Depreciacion = () => {
@@ -228,23 +184,14 @@ const Depreciacion = () => {
 
     const dispatch = useDispatch<AppDispatch>()
 
-    const store = useSelector((state: RootState) => state.entrega)
+    const store = useSelector((state: RootState) => state.depreciacion)
     useEffect(() => {
-        dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
+        dispatch(fetchData({ fecha_compra: fechaCompra, fecha_final: fechaFinal, skip: page * pageSize, limit: pageSize }))
     }, [pageSize, page])
 
-    useEffect(() => {
-        const fetch = async () => {
-            const res = await instance.get('/depreciacion')
-        }
-        fetch()
-    }, [fechaCompra, fechaFinal])
-
-    const handleFilters = (field: string) => {
-        dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
+    const handleCalcular = () => {
+        dispatch(fetchData({ fecha_compra: fechaCompra, fecha_final: fechaFinal, skip: page * pageSize, limit: pageSize }))
     }
-
-
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>
@@ -277,7 +224,9 @@ const Depreciacion = () => {
                                     value={fechaFinal}
                                     onChange={(e) => setFechaFinal(e.target.value)}
                                 />
-                                <Button variant='contained'>Calcular</Button>
+                                <Can I='calcular' a='depreciacion'>
+                                    <Button variant='contained' onClick={handleCalcular}>Calcular</Button>
+                                </Can>
                             </Box>
 
                             <Card sx={{ backgroundColor: theme => hexToRGBA(theme.palette.secondary.main, 0.3) }}>
@@ -286,8 +235,8 @@ const Depreciacion = () => {
                                 </Box>
                                 <Divider />
                                 <Box sx={{ p: 3, pt: 0 }}>
-                                    <Typography variant='subtitle1'>29 noviembre 2025</Typography>
-                                    <Typography variant='h6'>Bs. 2.470559</Typography>
+                                    <Typography variant='subtitle1'>{formatearConDia(fechaCompra)}</Typography>
+                                    <Typography variant='h6'>{store.valor_ufv}</Typography>
                                 </Box>
                             </Card>
                         </Box>
