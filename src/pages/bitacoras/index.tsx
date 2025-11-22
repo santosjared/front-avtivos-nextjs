@@ -1,175 +1,156 @@
 import React, { useState, useEffect, MouseEvent } from 'react'
-import { Box, Button, Card, CardContent, Divider, FormControl, Grid, IconButton, Menu, MenuItem, TextField, Tooltip, Typography, useTheme } from '@mui/material'
+import { Box, Button, Card, FormControl, Grid, TextField, Tooltip, Typography } from '@mui/material'
 import { DataGrid } from "@mui/x-data-grid"
 import { useDispatch } from 'react-redux'
 import Icon from 'src/@core/components/icon'
 import { RootState, AppDispatch } from 'src/store'
 import { useSelector } from 'react-redux'
 import { GradeType, UserType } from 'src/types/types'
-import Swal from 'sweetalert2'
-import { deleteEntrega, fetchData } from 'src/store/entrega'
-import { styled } from '@mui/material/styles'
-import Link from 'next/link'
-import { hexToRGBA } from "src/@core/utils/hex-to-rgba";
-import { instance } from 'src/configs/axios'
+import { format } from 'date-fns'
+import { fetchData } from 'src/store/bitacoras'
 
-interface LocationType {
-    _id: string
-    name: string
-}
 
-interface RegisterType {
-    date: string
-    time: string
-    grade: GradeType | null
-    name: string
-    lastName: string
-    location: LocationType | null
-    description: string
-    otherLocation: string
-    otherGrade: string
-
-}
-
-interface SubCategoryType {
-    _id?: string
-    name: string
-    util: number
-}
-
-interface ContableType {
-    _id: string
-    name: string,
-    util: number,
-    subcategory: SubCategoryType[]
-    description?: string
-}
-
-interface StatusType {
-    _id: string
-    name: string
-}
-
-interface ResponsableType {
-    _id: string
-    grade: GradeType
-    name: string
-    lastName: string
-}
-
-interface ActivosType {
-    _id?: string
-    code: string,
-    responsable: ResponsableType | null,
-    name: string,
-    location: LocationType | null,
-    price_a: number,
-    date_a: string,
-    imageUrl: string | null,
-    status: StatusType | null
-    category: ContableType | null
-    subcategory: SubCategoryType | null
-}
-
-interface EntregaType {
-    _id?: string
-    code: string
-    date: string
-    time: string
-    user_en: UserType | null
-    user_rec: UserType | null
-    location: LocationType
-    documentUrl?: string
-    description?: string
+interface BitacorasType {
+    user: UserType | null
+    action: string
+    method: string
+    logs: string
+    createdAt: string
 }
 
 interface CellType {
-    row: EntregaType
+    row: BitacorasType
 }
+
+const safe = (txt?: string) => txt || "";
+const fullName = (u: UserType | null) => {
+    return [
+        safe(u?.grade?.name),
+        safe(u?.name),
+        safe(u?.lastName),
+    ].join(" ").trim();
+};
 
 const columns = [
     {
-        flex: 0.2,
-        minWidth: 150,
+        flex: 0.15,
+        minWidth: 90,
         field: 'date',
         headerName: 'Fecha y hora',
         renderCell: ({ row }: CellType) => {
+
             return (
-                <Tooltip title={row.code}>
-                    <Typography variant='body2' noWrap>{row.code}</Typography>
+                <Box display="flex" flexDirection="column" alignItems="center">
+                    <Typography variant="h6" noWrap>
+                        {format(new Date(row?.createdAt), 'HH:mm')}
+                    </Typography>
+                    <Typography variant="body2" noWrap>
+                        {format(new Date(row?.createdAt), 'dd/MM/yyyy')}
+                    </Typography>
+                </Box>
+            )
+        }
+    },
+    {
+        flex: 0.2,
+        minWidth: 200,
+        field: 'user',
+        headerName: 'usuario',
+        renderCell: ({ row }: CellType) => {
+
+            return (
+                <Tooltip title={fullName(row.user) || 'No Identificado'}>
+                    <Typography variant='body2' noWrap>{fullName(row.user) || 'No Identificado'}</Typography>
                 </Tooltip>
             )
         }
     },
     {
         flex: 0.15,
-        minWidth: 100,
-        field: 'user',
-        headerName: 'usuario',
-        renderCell: ({ row }: CellType) => {
-            const date = new Date(row.date)
-            const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
-            return (
-                <Tooltip title={formatted}>
-                    <Typography variant='body2' noWrap>{formatted}</Typography>
-                </Tooltip>
-            )
-        }
-    },
-    {
-        flex: 0.1,
         minWidth: 90,
         field: 'action',
         headerName: 'Accion',
         renderCell: ({ row }: CellType) => {
             return (
-                <Tooltip title={row.time}>
-                    <Typography variant='body2' noWrap>{row.time}</Typography>
+                <Tooltip title={row.action}>
+                    <Typography variant='body2' noWrap>{row.action}</Typography>
                 </Tooltip>
 
             )
         }
     },
     {
-        flex: 0.1,
+        flex: 0.15,
+        minWidth: 90,
+        field: 'metod',
+        headerName: 'Metodo',
+        renderCell: ({ row }: CellType) => {
+            return (
+                <Tooltip title={row.method}>
+                    <Typography variant='body2' noWrap>{row.method}</Typography>
+                </Tooltip>
+
+            )
+        }
+    },
+    {
+        flex: 0.15,
         minWidth: 90,
         field: 'tipo',
         sortable: false,
         headerName: 'tipo de usuario',
         renderCell: ({ row }: CellType) => {
-            const fullname = `${row.user_rec?.grade?.name || ''} ${row.user_rec?.name || ''} ${row.user_rec?.lastName || ''}`
+
             return (
-                <Tooltip title={fullname}>
-                    <Typography variant='body2' noWrap>{fullname}</Typography>
+                <Tooltip title={row.user?.tipo}>
+                    <Typography variant='body2' noWrap>{row.user?.tipo || 'Externo'}</Typography>
                 </Tooltip>
 
             )
         }
     },
     {
-        flex: 0.1,
-        minWidth: 90,
+        flex: 0.17,
+        minWidth: 170,
         field: 'rol',
         headerName: 'Rol de usuario',
         renderCell: ({ row }: CellType) => {
+
             return (
-                <Tooltip title={row.location?.name}>
-                    <Typography variant='body2' noWrap>{row.location?.name}</Typography>
-                </Tooltip>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                    py: 1,
+                }}>
+                    {row.user?.roles?.length === 0 ? (
+                        <Typography variant='body2'>Ninguno</Typography>
+                    ) : (
+                        row.user?.roles?.map?.((rol, index) => (
+                            <Typography key={index}
+                                noWrap={false}
+                                variant='body2'
+                                sx={{ textTransform: 'capitalize' }}
+                            >
+                                {rol.name}
+                            </Typography>
+                        ))
+                    )}
+                </Box>
 
             )
         }
     },
     {
-        flex: 0.1,
-        minWidth: 90,
-        field: 'blog',
-        headerName: 'blogs',
+        flex: 0.25,
+        minWidth: 250,
+        field: 'logs',
+        headerName: 'Logs',
         renderCell: ({ row }: CellType) => {
-            const fullname = `${row.user_en?.grade?.name || ''} ${row.user_en?.name || ''} ${row.user_en?.lastName || ''}`
+
             return (
-                <Tooltip title={fullname}>
-                    <Typography variant='body2' noWrap>{fullname}</Typography>
+                <Tooltip title={row.logs}>
+                    <Typography variant='body2' noWrap>{row.logs}</Typography>
                 </Tooltip>
             )
         }
@@ -186,7 +167,7 @@ const Bitacoras = () => {
 
     const dispatch = useDispatch<AppDispatch>()
 
-    const store = useSelector((state: RootState) => state.entrega)
+    const store = useSelector((state: RootState) => state.bitacora)
     useEffect(() => {
         dispatch(fetchData({ skip: page * pageSize, limit: pageSize }))
     }, [pageSize, page])
@@ -243,7 +224,7 @@ const Bitacoras = () => {
 
                                 <Button
                                     variant="outlined"
-                                    onClick={() => handleFilters(field)}
+                                    onClick={() => handleFilters(field || date)}
                                     startIcon={<Icon icon='mdi:search' />}
                                     sx={{
                                         borderRadius: 0,
@@ -266,6 +247,7 @@ const Bitacoras = () => {
                             </Box>
                         </Box>
                     </Box>
+
                     <DataGrid
                         autoHeight
                         rows={store.data}

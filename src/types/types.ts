@@ -16,7 +16,8 @@ export type UserType = {
     grade: GradeType,
     exp: string
     password: string,
-    rol: Rol[]
+    tipo: string
+    roles: Rol[]
     status: string
     _id: string
     __v?: string

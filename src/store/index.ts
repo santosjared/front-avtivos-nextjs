@@ -8,6 +8,7 @@ import contable from './contable'
 import devolucion from './devolucion'
 import devolver from './devolver'
 import depreciacion from './depreciacion'
+import bitacora from './bitacoras'
 
 export const store = configureStore({
     reducer: {
@@ -19,7 +20,9 @@ export const store = configureStore({
         contable,
         devolucion,
         devolver,
-        depreciacion
+        depreciacion,
+        bitacora
+
     },
     middleware: getDefaultMiddleware =>
         getDefaultMiddleware({
