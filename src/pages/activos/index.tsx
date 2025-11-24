@@ -12,6 +12,7 @@ import CustomChip from 'src/@core/components/mui/chip'
 import { instance } from "src/configs/axios";
 import AddActivos from "src/views/pages/activos/Register";
 import Can from "src/layouts/components/acl/Can";
+import Trazabildad from "src/views/pages/activos/Trazabildad";
 
 interface SubCategoryType {
     _id?: string
@@ -83,8 +84,10 @@ const Activos = () => {
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [selectedSubCategory, setSelectedSubcategory] = useState<string>('')
     const [selectedStatus, setSelectedStatus] = useState('');
+    const [openTrazabildad, setOpenTrazabilidad] = useState<boolean>(false)
 
     const toggleDrawer = () => setDrawOpen(!drawOpen)
+    const toggleTrazabildad = () => setOpenTrazabilidad(!openTrazabildad)
 
     const store = useSelector((state: RootState) => state.activos)
     const dispatch = useDispatch<AppDispatch>()
@@ -444,6 +447,13 @@ const Activos = () => {
                         rowCount={store.total}
                         paginationMode="server"
                         onPageChange={(newPage) => setPage(newPage)}
+                        onCellClick={(params) => {
+                            if (params.field === 'actions') {
+                                return
+                            }
+                            setId(params.row._id)
+                            toggleTrazabildad()
+                        }}
                         sx={{ '& .MuiDataGrid-columnHeaders': { borderRadius: 0 } }}
                         localeText={{
                             MuiTablePagination: {
@@ -467,6 +477,11 @@ const Activos = () => {
                     />
                 </AddDraw>
             </Can>
+            <Trazabildad
+                id={id}
+                open={openTrazabildad}
+                toggle={toggleTrazabildad}
+            />
         </Grid>
     )
 }

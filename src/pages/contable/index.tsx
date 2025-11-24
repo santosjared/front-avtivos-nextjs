@@ -305,7 +305,7 @@ const Contable = () => {
                         rowCount={store.total}
                         paginationMode="server"
                         onPageChange={(newPage) => setPage(newPage)}
-                        onCellClick={(params, event) => {
+                        onCellClick={(params) => {
                             if (params.field === 'actions') {
                                 return
                             }

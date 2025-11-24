@@ -9,6 +9,7 @@ import devolucion from './devolucion'
 import devolver from './devolver'
 import depreciacion from './depreciacion'
 import bitacora from './bitacoras'
+import dashboard from './dashboard'
 
 export const store = configureStore({
     reducer: {
@@ -21,7 +22,8 @@ export const store = configureStore({
         devolucion,
         devolver,
         depreciacion,
-        bitacora
+        bitacora,
+        dashboard
 
     },
     middleware: getDefaultMiddleware =>

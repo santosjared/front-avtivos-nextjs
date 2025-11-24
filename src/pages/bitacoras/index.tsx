@@ -1,4 +1,4 @@
-import React, { useState, useEffect, MouseEvent } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Box, Button, Card, FormControl, Grid, TextField, Tooltip, Typography } from '@mui/material'
 import { DataGrid } from "@mui/x-data-grid"
 import { useDispatch } from 'react-redux'
@@ -277,7 +277,7 @@ const Bitacoras = () => {
 }
 Bitacoras.acl = {
     action: 'read',
-    subject: 'depreciacion'
+    subject: 'bitacora'
 }
 
 Bitacoras.authGuard = true;
