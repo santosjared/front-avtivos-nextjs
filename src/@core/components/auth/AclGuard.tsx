@@ -31,6 +31,7 @@ const AclGuard = ({ children, guestGuard, aclAbilities }: AclGuardProps) => {
     }
     setLoading(false)
   }, [user])
+
   return (
     <AbilityContext.Provider value={ability || emptyAbility}>
       {guestGuard || ['/404', '/500', '/'].includes(router.route) ? (

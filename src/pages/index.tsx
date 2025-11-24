@@ -19,7 +19,7 @@ const getFirstAllowedRoute = (ability: any) => {
 const Home = () => {
   const router = useRouter()
   const ability = useContext(AbilityContext)
-
+  console.log(ability)
   useEffect(() => {
 
     if (!router.isReady || !ability) return
@@ -29,7 +29,7 @@ const Home = () => {
     if (route) {
       router.replace(route)
     } else {
-      router.replace('/acl')
+      router.replace('/dashboard')
     }
   }, [router.isReady, ability])
 

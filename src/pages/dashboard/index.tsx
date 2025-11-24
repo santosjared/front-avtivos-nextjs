@@ -1,11 +1,13 @@
-import { Box, Card, CardContent, Grid, Tooltip, Typography, useTheme, useThemeProps } from "@mui/material";
+import { Box, Card, CardContent, Grid, Paper, Tooltip, Typography, useTheme } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import Icon from "src/@core/components/icon"
 import { AppDispatch, RootState } from "src/store";
 import { fetchData } from "src/store/dashboard";
+import ClockWidget from "src/views/dashboard/Clock";
 import Estadisticas from "src/views/dashboard/Estadisticas";
+import CrmTotalGrowth from "src/views/dashboard/Torta";
 
 interface StatusType {
     [key: string]: { icon: string; color: string }
@@ -31,11 +33,7 @@ const formatearConDia = () => {
 const Dashboard = () => {
 
     const dispatch = useDispatch<AppDispatch>();
-    const [time, setTime] = useState({
-        hours: "00",
-        minutes: "00",
-        seconds: "00",
-    });
+
     const { totalStatus, topActivosPorPrecio, topActivosPrestados } = useSelector((state: RootState) => state.dashboard)
     const theme = useTheme()
 
@@ -48,19 +46,6 @@ const Dashboard = () => {
     useEffect(() => {
         dispatch(fetchData())
     }, [])
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const now = new Date();
-            setTime({
-                hours: now.getHours().toString().padStart(2, "0"),
-                minutes: now.getMinutes().toString().padStart(2, "0"),
-                seconds: now.getSeconds().toString().padStart(2, "0"),
-            });
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     return (
         <Grid container spacing={4}>
@@ -174,55 +159,10 @@ const Dashboard = () => {
                         <Typography variant="h4" sx={{ mb: 2 }}>
                             {formatearConDia()}
                         </Typography>
-                        <Grid container justifyContent="center" alignItems="center">
-                            <Grid item xs={3}>
-                                <Box sx={{ display: "flex", justifyContent: "center", flexDirection: "column", textAlign: "center" }}>
-                                    <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                                        {time.hours}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Hora
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                            <Grid item xs={1}>
-                                <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-                                    <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                                        :
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                            <Grid item xs={3}>
-                                <Box sx={{ display: "flex", justifyContent: "center", flexDirection: "column", textAlign: "center" }}>
-                                    <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                                        {time.minutes}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Minutos
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                            <Grid item xs={1}>
-                                <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-                                    <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                                        :
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                            <Grid item xs={3}>
-                                <Box sx={{ display: "flex", justifyContent: "center", flexDirection: "column", textAlign: "center" }}>
-                                    <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                                        {time.seconds}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Segundos
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                        </Grid>
+                        <ClockWidget />
+                        <CrmTotalGrowth totalStatus={totalStatus} />
                     </CardContent>
                 </Card>
-
             </Grid>
         </Grid>
 
