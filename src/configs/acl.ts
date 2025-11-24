@@ -1,5 +1,5 @@
 import { AbilityBuilder, createMongoAbility, MongoAbility } from '@casl/ability'
-import { Rol, Permission, Actions } from 'src/context/types'
+import { Rol, Actions } from 'src/context/types'
 import { mergePermissions } from 'src/utils/merged.permissions'
 
 export type Subjects = string

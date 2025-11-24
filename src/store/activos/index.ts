@@ -76,7 +76,8 @@ export const fetchData = createAsyncThunk(
         try {
             const response = await instance.get('/activos', {
                 params: filters,
-            })
+            });
+
             return response.data
         } catch (e) {
             console.log(e)
@@ -85,6 +86,7 @@ export const fetchData = createAsyncThunk(
                 text: 'Se ha producido un error al intentar traer los activos. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
+
             return null
         }
     }
@@ -105,7 +107,8 @@ export const addActivos = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filters))
+            dispatch(fetchData(data.filters));
+
             return response.data
         } catch (e) {
             console.log(e)
@@ -114,6 +117,7 @@ export const addActivos = createAsyncThunk(
                 text: 'Se ha producido un error al intentar crear el activo. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
+
             return null
         }
     }
@@ -134,7 +138,8 @@ export const updateActivos = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filters))
+            dispatch(fetchData(data.filters));
+
             return response.data
         } catch (e) {
             console.log(e)
@@ -143,6 +148,7 @@ export const updateActivos = createAsyncThunk(
                 text: 'Se ha producido un error al intentar actualizar el activo. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
+
             return null
         }
     }
@@ -160,7 +166,8 @@ export const deleteActivos = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filters))
+            dispatch(fetchData(data.filters));
+
             return response.data
         } catch (e) {
             console.log(e)
@@ -169,6 +176,7 @@ export const deleteActivos = createAsyncThunk(
                 text: 'Se ha producido un error al intentar eliminar el activo. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
+
             return null
         }
     }

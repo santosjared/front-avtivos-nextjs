@@ -2,18 +2,9 @@
 import { Box, Button, FormControl, FormHelperText, Grid, TextField, Typography, useTheme } from "@mui/material"
 import Icon from 'src/@core/components/icon'
 import * as yup from 'yup'
-import { useDispatch } from 'react-redux'
-import { AppDispatch, RootState } from "src/store"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from '@hookform/resolvers/yup'
-import { GradeType } from "src/types/types"
-import { useSelector } from "react-redux"
-import { setData, } from "src/store/borrowing/register"
 
-interface LocationType {
-    _id: string
-    name: string
-}
 
 interface defaultValuesType {
     date: string

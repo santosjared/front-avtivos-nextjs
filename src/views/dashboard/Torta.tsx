@@ -1,8 +1,6 @@
 import Box from '@mui/material/Box'
-import Card from '@mui/material/Card'
 import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
-import CardContent from '@mui/material/CardContent'
 import { ApexOptions } from 'apexcharts'
 import dynamic from 'next/dynamic'
 

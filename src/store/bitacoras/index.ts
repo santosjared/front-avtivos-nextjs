@@ -33,6 +33,7 @@ export const fetchData = createAsyncThunk('bitacoras/fetchData', async (filters:
         const response = await instance.get('/bitacoras', {
             params: filters
         });
+
         return response.data
     } catch (e: any) {
         console.log(e);
@@ -42,6 +43,7 @@ export const fetchData = createAsyncThunk('bitacoras/fetchData', async (filters:
                 }. Por favor, comuníquese con el administrador del sistema.`,
             icon: 'error',
         });
+
         return null
     }
 })

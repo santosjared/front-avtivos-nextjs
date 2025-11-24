@@ -12,8 +12,9 @@ export const fetchData = createAsyncThunk('user/fetchUser',
         try {
             const response = await instance.get('/users', {
                 params: filters
-            })
-            return response.data
+            });
+
+            return response.data;
         } catch (e) {
             console.log(e)
             Swal.fire({
@@ -21,6 +22,7 @@ export const fetchData = createAsyncThunk('user/fetchUser',
                 text: 'Se ha producido un error al intentar obtener los usuarios. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
+
             return null;
         }
     }
@@ -29,16 +31,18 @@ export const fetchData = createAsyncThunk('user/fetchUser',
 export const addUser = createAsyncThunk('user/addUser',
     async (data: { [key: string]: any }, { dispatch }: Redux) => {
         try {
-            const response = await instance.post('/users', data.data)
+            const response = await instance.post('/users', data.data);
+
             Swal.fire({
                 title: '¡Éxito!',
                 text: 'Datos guardados exitosamente',
                 icon: "success"
             });
-            dispatch(fetchData(data.filters))
-            return response
+            dispatch(fetchData(data.filters));
+
+            return response;
         } catch (e) {
-            console.log(e)
+            console.log(e);
             Swal.fire({
                 title: '¡Error!',
                 text: 'Se ha producido un error al intentar crear al usuario. Contacte al desarrollador del sistema para más asistencia.',
@@ -57,8 +61,9 @@ export const updateUser = createAsyncThunk('user/updateUser',
                 text: 'Datos actualizados exitosamente',
                 icon: "success"
             });
-            dispatch(fetchData(data.filters))
-            return response
+            dispatch(fetchData(data.filters));
+
+            return response;
         } catch (e) {
             console.log(e)
             Swal.fire({
@@ -79,8 +84,9 @@ export const dowUser = createAsyncThunk('user/dowUser',
                 text: 'Usuario dado de baja',
                 icon: "success"
             });
-            dispatch(fetchData(data.filters))
-            return response
+            dispatch(fetchData(data.filters));
+
+            return response;
         } catch (e) {
             console.log(e)
             Swal.fire({
@@ -102,8 +108,9 @@ export const upUser = createAsyncThunk('user/upUser',
                 text: 'Usuario reincorporado',
                 icon: "success"
             });
-            dispatch(fetchData(data.filters))
-            return response
+            dispatch(fetchData(data.filters));
+
+            return response;
         } catch (e: any) {
             console.log(e)
             Swal.fire({

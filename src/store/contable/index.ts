@@ -36,7 +36,8 @@ export const fetchData = createAsyncThunk(
     'contable/fetchData',
     async (filters?: FetchParams) => {
         try {
-            const response = await instance.get('/contables', { params: filters })
+            const response = await instance.get('/contables', { params: filters });
+
             return response.data
         } catch (e) {
             console.log(e)
@@ -45,6 +46,7 @@ export const fetchData = createAsyncThunk(
                 text: 'Se ha producido un error al intentar traer grupos contables. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
+
             return null
         }
     }
@@ -56,7 +58,8 @@ export const addContable = createAsyncThunk(
         try {
             const response = await instance.post('/contables', data)
             Swal.fire('¡Éxito!', 'Grupo contable creado exitosamente', 'success')
-            dispatch(fetchData(filters))
+            dispatch(fetchData(filters));
+
             return response.data
         } catch (e) {
             console.log(e)
@@ -65,6 +68,7 @@ export const addContable = createAsyncThunk(
                 text: 'Se ha producido un error al intentar crear grupos contables. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
+
             return null
         }
     }
@@ -74,9 +78,10 @@ export const updateContable = createAsyncThunk(
     'contable/updateContable',
     async ({ id, data, filters }: { id: string; data: ContableType; filters: FetchParams }, { dispatch }) => {
         try {
-            const response = await instance.put(`/contables/${id}`, data)
-            Swal.fire('¡Éxito!', 'Grupo contable actualizado exitosamente', 'success')
-            dispatch(fetchData(filters))
+            const response = await instance.put(`/contables/${id}`, data);
+            Swal.fire('¡Éxito!', 'Grupo contable actualizado exitosamente', 'success');
+            dispatch(fetchData(filters));
+
             return response.data
         } catch (e) {
             console.log(e)
@@ -85,6 +90,7 @@ export const updateContable = createAsyncThunk(
                 text: 'Se ha producido un error al intentar actualizar grupos contables. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
+
             return null
         }
     }
@@ -96,7 +102,8 @@ export const deleteContable = createAsyncThunk(
         try {
             const response = await instance.delete(`/contables/${id}`)
             Swal.fire('¡Éxito!', 'Grupo contable eliminado exitosamente', 'success')
-            dispatch(fetchData(filters))
+            dispatch(fetchData(filters));
+
             return response.data
         } catch (e) {
             console.log(e)
@@ -105,6 +112,7 @@ export const deleteContable = createAsyncThunk(
                 text: 'Se ha producido un error al intentar Eliminar grupos contables. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
+
             return null
         }
     }

@@ -93,6 +93,7 @@ const schema = yup.object().shape({
         .transform(value => value ?? '')
         .test('empty-or-valid', 'La descripción debe tener al menos 10 caracteres', value => {
             if (!value) return true;
+
             return value.trim().length >= 10;
         })
         .max(1000, 'La descripción no debe superar los 1000 caracteres')
@@ -267,7 +268,8 @@ const AddInfo = ({ toggle, open, entrega, setEntrega }: Props) => {
                                             onChange={(e) => {
                                                 const selectedId = e.target.value as string
                                                 if (selectedId === 'Other') {
-                                                    onChange({ name: 'OTRO', _id: 'Other' })
+                                                    onChange({ name: 'OTRO', _id: 'Other' });
+
                                                     return
                                                 }
 

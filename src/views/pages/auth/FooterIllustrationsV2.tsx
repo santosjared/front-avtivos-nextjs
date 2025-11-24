@@ -33,8 +33,10 @@ const FooterIllustrationsV2 = (props: FooterIllustrationsProp) => {
   const src = (image as string) || `/images/pages/auth-v2-login-mask-${theme.palette.mode}.png`
 
   if (!hidden) {
+
     return <>{image && typeof image !== 'string' ? image : <MaskImg alt='mask' src={src} />}</>
   } else {
+
     return null
   }
 }

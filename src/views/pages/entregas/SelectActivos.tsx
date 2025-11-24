@@ -10,9 +10,7 @@ import {
     Box,
     TextField,
     Card,
-    CardHeader,
     CardContent,
-    Divider,
     Grid,
     FormControl,
     Select,
@@ -103,6 +101,7 @@ const Transition = forwardRef(function Transition(
     props: FadeProps & { children?: ReactElement<any, any> },
     ref: Ref<unknown>
 ) {
+
     return <Fade ref={ref} {...props} />
 })
 
@@ -282,7 +281,8 @@ const SelectActivos = ({ openpage, toggle, setSelectActivos }: Props) => {
                 </Tooltip>
             )
         },
-    ]
+    ];
+
     return (
         <Dialog
             fullWidth

@@ -221,6 +221,7 @@ const Activos = () => {
             renderCell: ({ row }: CellType) => {
                 const date = new Date(row.date_a)
                 const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+
                 return <Typography variant="body2" noWrap>{formatted}</Typography>
             }
         },
@@ -248,6 +249,7 @@ const Activos = () => {
             field: 'responsable', headerName: 'Responsable', minWidth: 190, flex: 0.19,
             renderCell: ({ row }: CellType) => {
                 const text = `${row.grade?.name || ''} ${row.responsable?.name || ''} ${row.responsable?.lastName || ''}`
+
                 return (
                     <Tooltip title={text}>
                         <Typography variant="body2" noWrap>{text}</Typography>

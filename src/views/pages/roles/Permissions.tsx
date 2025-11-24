@@ -68,6 +68,7 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
 
     const isActionEnabled = useCallback((action: Actions, subject: Subjects): boolean => {
         const permission = per.find(p => p.subject === subject);
+
         return permission?.action.includes(action) || false;
     }, [per]);
 
@@ -83,8 +84,10 @@ const Permissions = ({ open, toggle, id, page, pageSize }: Props) => {
 
                 const updated = [...prev];
                 updated[idx] = { subject, action: newActions };
+
                 return updated;
             } else {
+
                 return [...prev, { subject, action: [action] }];
             }
         });

@@ -80,7 +80,8 @@ const schema = yup.object().shape({
         .string()
         .transform(value => value === undefined || value === null ? '' : value)
         .test('empty-or-valid', 'La descripción debe tener al menos 10 caracteres', value => {
-            if (!value) return true
+            if (!value) return true;
+
             return value.trim().length >= 10
         })
         .max(500, 'La descripción no debe superar los 500 caracteres')
@@ -197,13 +198,13 @@ const AddConatble = ({ toggle, page, pageSize, mode = 'create', id, open }: Prop
                                                     label='Sub categoría'
                                                     placeholder='Mesas'
                                                     onChange={onChange}
-                                                    error={Boolean(errors.subcategory?.[index]?.name)}
+                                                    error={Boolean(errors?.subcategory?.[index]?.name)}
                                                     value={value}
 
                                                 />
                                             )}
                                         />
-                                        {errors.subcategory?.[index]?.name && <FormHelperText sx={{ color: 'error.main' }}>{errors.subcategory?.[index]?.name.message}</FormHelperText>}
+                                        {errors?.subcategory?.[index]?.name && <FormHelperText sx={{ color: 'error.main' }}>{errors?.subcategory?.[index]?.name?.message}</FormHelperText>}
                                     </FormControl>
                                 </Grid>
                                 <Grid item xs={5.5}>
@@ -218,12 +219,12 @@ const AddConatble = ({ toggle, page, pageSize, mode = 'create', id, open }: Prop
                                                     label='Vida útil'
                                                     type="number"
                                                     onChange={onChange}
-                                                    error={Boolean(errors.subcategory?.[index]?.util)}
+                                                    error={Boolean(errors?.subcategory?.[index]?.util)}
                                                     value={value || ''}
                                                 />
                                             )}
                                         />
-                                        {errors.subcategory?.[index]?.util && <FormHelperText sx={{ color: 'error.main' }}>{errors.subcategory?.[index]?.util.message}</FormHelperText>}
+                                        {errors?.subcategory?.[index]?.util && <FormHelperText sx={{ color: 'error.main' }}>{errors.subcategory?.[index]?.util?.message}</FormHelperText>}
                                     </FormControl>
                                 </Grid>
                                 <Grid item xs={0.5}>
@@ -260,7 +261,7 @@ const AddConatble = ({ toggle, page, pageSize, mode = 'create', id, open }: Prop
                                     />
                                 )}
                             />
-                            {errors.description && <FormHelperText sx={{ color: 'error.main' }}>{errors.description.message}</FormHelperText>}
+                            {errors.description && <FormHelperText sx={{ color: 'error.main' }}>{errors?.description?.message}</FormHelperText>}
                         </FormControl>
                     </Grid>
                 </Grid>

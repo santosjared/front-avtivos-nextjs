@@ -1,49 +1,11 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { instance } from 'src/configs/axios'
-import { GradeType, UserType } from 'src/types/types'
+import { UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
 
 interface LocationType {
     _id: string
     name: string
-}
-interface StatusType {
-    _id: string
-    name: string
-}
-interface ResponsableType {
-    _id: string
-    grade: GradeType
-    name: string
-    lastName: string
-}
-
-interface SubCategoryType {
-    _id?: string
-    name: string
-    util: number
-}
-
-interface ContableType {
-    _id: string
-    name: string,
-    util: number,
-    subcategory: SubCategoryType[]
-    description?: string
-}
-
-interface ActivosType {
-    _id?: string
-    code: string,
-    responsable: ResponsableType | null,
-    name: string,
-    location: LocationType | null,
-    price_a: number,
-    date_a: string,
-    imageUrl: string | null,
-    status: StatusType | null
-    category: ContableType | null
-    subcategory: SubCategoryType | null
 }
 
 interface EntregaType {
@@ -84,8 +46,9 @@ export const fetchData = createAsyncThunk(
         try {
             const response = await instance.get('/entregas', {
                 params: filters,
-            })
-            return response.data
+            });
+
+            return response.data;
         } catch (e: any) {
             console.log(e)
             Swal.fire({
@@ -94,7 +57,8 @@ export const fetchData = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
-            return null
+
+            return null;
         }
     }
 )
@@ -114,8 +78,9 @@ export const addEntrega = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filters))
-            return response.data
+            dispatch(fetchData(data.filters));
+
+            return response.data;
         } catch (e: any) {
             console.log(e)
             Swal.fire({
@@ -124,6 +89,7 @@ export const addEntrega = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
+
             return rejectWithValue(e.response?.data);
         }
     }
@@ -144,8 +110,9 @@ export const updateEntrega = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filters))
-            return response.data
+            dispatch(fetchData(data.filters));
+
+            return response.data;
         } catch (e: any) {
             console.log(e)
             Swal.fire({
@@ -154,6 +121,7 @@ export const updateEntrega = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
+
             return rejectWithValue(e.response?.data);
         }
     }
@@ -171,8 +139,9 @@ export const deleteEntrega = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filters))
-            return response.data
+            dispatch(fetchData(data.filters));
+
+            return response.data;
         } catch (e: any) {
             console.log(e)
             Swal.fire({
@@ -181,7 +150,8 @@ export const deleteEntrega = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
-            return null
+
+            return null;
         }
     }
 )

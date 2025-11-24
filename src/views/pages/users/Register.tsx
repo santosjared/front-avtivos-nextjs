@@ -198,6 +198,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', open, defaultValues 
     const fetchRol = async () => {
 
         if (loadingRoles) return;
+
         setLoadingRoles(true);
 
         try {
@@ -219,7 +220,9 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', open, defaultValues 
     }
 
     const fetchGrade = async () => {
+
         if (loadingGrades) return;
+
         setLoadingGrades(true);
         try {
             const response = await instance.get('/users/grades', {
@@ -231,6 +234,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', open, defaultValues 
             setGrades(prevGrades => {
                 const newGrades = response.data?.result || [];
                 const gradesWithoutOther = prevGrades.filter(g => g._id !== 'Other');
+
                 return [...gradesWithoutOther, ...newGrades, { name: 'Otro', _id: 'Other' }];
             });
             setTotalGrades(response.data?.total || 0);
@@ -264,13 +268,16 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', open, defaultValues 
     }, [roles, totalRoles]);
 
     useEffect(() => {
+
         if (!observerGrade.current) return;
+
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && grades.length < totalGrades) {
                 fetchGrade();
             }
         }, { threshold: 1 });
         observer.observe(observerGrade.current);
+
         return () => observer.disconnect();
     }, [grades, totalGrades]);
 
@@ -309,6 +316,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', open, defaultValues 
                             type: 'manual',
                             message: 'Este correo ya está registrado'
                         });
+
                         return;
                     }
                 }
@@ -319,6 +327,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', open, defaultValues 
                             type: 'manual',
                             message: 'Este CI ya está registrado'
                         });
+
                         return;
                     }
                 }
@@ -332,6 +341,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', open, defaultValues 
                         type: 'manual',
                         message: 'Este correo ya está registrado'
                     });
+
                     return;
                 }
                 if (checkCiResponse.data) {
@@ -339,6 +349,7 @@ const AddUser = ({ toggle, page, pageSize, mode = 'create', open, defaultValues 
                         type: 'manual',
                         message: 'Este CI ya está registrado'
                     });
+
                     return;
                 }
                 dispatch(addUser({ data: newData, filters: { skip: page * pageSize, limit: pageSize } }))

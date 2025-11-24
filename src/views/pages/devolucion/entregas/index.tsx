@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux'
 import Icon from 'src/@core/components/icon'
 import { RootState, AppDispatch } from 'src/store'
 import { useSelector } from 'react-redux'
-import { GradeType, UserType } from 'src/types/types'
+import { UserType } from 'src/types/types'
 import { styled } from '@mui/material/styles'
 import Link from 'next/link'
 import getConfig from 'src/configs/environment'
@@ -19,33 +19,6 @@ interface LocationType {
     name: string
 }
 
-
-interface SubCategoryType {
-    _id?: string
-    name: string
-    util: number
-}
-
-interface ContableType {
-    _id: string
-    name: string,
-    util: number,
-    subcategory: SubCategoryType[]
-    description?: string
-}
-
-interface StatusType {
-    _id: string
-    name: string
-}
-
-interface ResponsableType {
-    _id: string
-    grade: GradeType
-    name: string
-    lastName: string
-}
-
 interface EntregaType {
     _id?: string
     code: string
@@ -57,7 +30,6 @@ interface EntregaType {
     documentUrl?: string
     description?: string
 }
-
 
 interface CellType {
     row: EntregaType
@@ -105,6 +77,7 @@ const Entregas = ({ toggle }: Props) => {
             field: 'code',
             headerName: 'Código de entrega',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.code}>
                         <Typography variant='body2' noWrap>{row.code}</Typography>
@@ -120,6 +93,7 @@ const Entregas = ({ toggle }: Props) => {
             renderCell: ({ row }: CellType) => {
                 const date = new Date(row.date)
                 const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+
                 return (
                     <Tooltip title={formatted}>
                         <Typography variant='body2' noWrap>{formatted}</Typography>
@@ -133,6 +107,7 @@ const Entregas = ({ toggle }: Props) => {
             field: 'hrs',
             headerName: 'Hora de la entrega ',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.time}>
                         <Typography variant='body2' noWrap>{row.time}</Typography>
@@ -148,6 +123,7 @@ const Entregas = ({ toggle }: Props) => {
             headerName: 'Usuario que entrega',
             renderCell: ({ row }: CellType) => {
                 const fullname = `${row.user_en?.grade?.name || ''} ${row.user_en?.name || ''} ${row.user_en?.lastName || ''}`
+
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -163,6 +139,7 @@ const Entregas = ({ toggle }: Props) => {
             headerName: 'Usuario que recibe',
             renderCell: ({ row }: CellType) => {
                 const fullname = `${row.user_rec?.grade?.name || ''} ${row.user_rec?.name || ''} ${row.user_rec?.lastName || ''}`
+
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -177,6 +154,7 @@ const Entregas = ({ toggle }: Props) => {
             field: 'location',
             headerName: 'ubicacion',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.location?.name}>
                         <Typography variant='body2' noWrap>{row.location?.name}</Typography>
@@ -191,7 +169,6 @@ const Entregas = ({ toggle }: Props) => {
             field: 'document',
             headerName: 'Documento',
             renderCell: ({ row }: CellType) => {
-                const theme = useTheme()
                 return (
                     <>
                         {row.documentUrl ? <Typography noWrap variant='body2' component={StyledLink}
@@ -222,6 +199,7 @@ const Entregas = ({ toggle }: Props) => {
                     dispatch(setState('create'))
                     router.push(`/devolver/${row.code}`)
                 }
+
                 return (
                     <Box
                         sx={{
@@ -259,7 +237,8 @@ const Entregas = ({ toggle }: Props) => {
             }
         }
 
-    ]
+    ];
+
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>

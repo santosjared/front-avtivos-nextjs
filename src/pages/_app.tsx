@@ -46,7 +46,6 @@ type GuardProps = {
 
 const clientSideEmotionCache = createEmotionCache()
 
-// ** Pace Loader
 if (themeConfig.routingLoader) {
   Router.events.on('routeChangeStart', () => {
     NProgress.start()
@@ -104,6 +103,7 @@ const App = (props: ExtendedAppProps) => {
           <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
             <SettingsConsumer>
               {({ settings }) => {
+
                 return (
                   <ThemeComponent settings={settings}>
                     <WindowWrapper>

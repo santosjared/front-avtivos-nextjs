@@ -12,12 +12,10 @@ interface Props {
 }
 
 const UserLayout = ({ children, contentHeightFixed }: Props) => {
+  // ** Hooks
   const { settings, saveSettings } = useSettings()
-  const hidden = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'))
 
-  if (hidden && settings.layout === 'horizontal') {
-    settings.layout = 'vertical'
-  }
+  const hidden = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'))
 
   return (
     <Layout

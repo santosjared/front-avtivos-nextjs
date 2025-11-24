@@ -1,7 +1,6 @@
-import { useContext } from 'react'
-import { AbilityContext } from 'src/layouts/components/acl/Can'
+
 import Typography from '@mui/material/Typography'
-import { Alert, Box, BoxProps, Card, CardContent, styled } from '@mui/material'
+import { Alert, Box, BoxProps, styled } from '@mui/material'
 
 const BoxWrapper = styled(Box)<BoxProps>(({ theme }) => ({
   [theme.breakpoints.down('md')]: {
@@ -10,8 +9,6 @@ const BoxWrapper = styled(Box)<BoxProps>(({ theme }) => ({
 }))
 
 const ACLPage = () => {
-  const ability = useContext(AbilityContext)
-
   return (
     <Box className='content-center'>
       <Box sx={{ p: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -23,7 +20,7 @@ const ACLPage = () => {
             You are not authorized! 🔐
           </Typography>
           <Alert severity="warning">
-            <Typography variant='h6' sx={{ mb: 2, display: 'block' }}>
+            <Typography variant='overline' sx={{ mb: 2, display: 'block' }}>
               No tienes ningun permiso para manejar este sistema porfavor solicite permisos
               al administrador de este sistema
             </Typography>

@@ -161,12 +161,12 @@ const Devolver = () => {
             error = true;
         }
         if (!devolucion?.code) newErrors.code = 'El código es obligatorio';
-        if (!devolucion?.date) newErrors.date = 'La fecha de entrega es obligatoria';
-        if (!devolucion?.time) newErrors.time = 'La hora de entrega es obligatoria';
-        if (!devolucion?.user_dev) newErrors.user_dev = 'El usuario que entrega es obligatorio';
+        if (!devolucion?.date) newErrors.date = 'La fecha de devolución es obligatoria';
+        if (!devolucion?.time) newErrors.time = 'La hora de devolución es obligatoria';
+        if (!devolucion?.user_dev) newErrors.user_dev = 'El usuario que devuelve es obligatorio';
         if (!devolucion?.user_rec) newErrors.user_rec = 'El usuario que recibe es obligatorio';
-        if (selectActivos.length === 0) {
-            setErrorAc('Seleccione un activo para entregar');
+        if (selectActivos.length === 0 && mode === 'create') {
+            setErrorAc('Seleccione un activo para para devolver');
             error = true;
         }
 
@@ -194,6 +194,7 @@ const Devolver = () => {
                     limpiar();
                     router.back();
                 })
+
             return;
         }
 
@@ -238,7 +239,6 @@ const Devolver = () => {
                 const res = await instance.get(`/entregas/${router.query.code}`)
                 const dev = await instance.get(`/devolucion/${router.query.code}`)
 
-
                 const { activos, user_rec, code } = res.data;
                 const devolucionBase = {
                     user_dev: user_rec,
@@ -266,11 +266,13 @@ const Devolver = () => {
                             }));
                             setActivos(activos || []);
                             setSelectActivos(dev.data?.activos || []);
+
                             return;
                         }
                         router.back()
 
                     });
+
                     return;
                 }
 
@@ -284,6 +286,7 @@ const Devolver = () => {
                         description: dev.data.description
                     }));
                     setActivos(activos || []);
+
                     return;
                 }
 
@@ -466,6 +469,7 @@ const Devolver = () => {
                                     {devolucion?.date ? (() => {
                                         const date = new Date(devolucion?.date)
                                         const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+
                                         return formatted
                                     })() : null}
                                 </Typography>

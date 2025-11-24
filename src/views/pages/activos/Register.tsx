@@ -141,10 +141,12 @@ const schema = yup.object().shape({
         .mixed<File>()
         .test('fileSize', 'El archivo es muy grande (máximo 12MB)', value => {
             if (!value) return true
+
             return (value as File).size <= 12 * 1024 * 1024
         })
         .test('fileType', 'Formato no soportado (solo JPG/PNG o JPEG)', value => {
             if (!value) return true
+
             return ['image/jpeg', 'image/png', 'image/jpg'].includes((value as File).type)
         })
         .notRequired(),
@@ -194,6 +196,7 @@ const schema = yup.object().shape({
         .transform(value => value === undefined || value === null ? '' : value)
         .test('empty-or-valid', 'La descripción debe tener al menos 10 caracteres', value => {
             if (!value) return true
+
             return value.trim().length >= 10
         })
         .max(1000, 'La descripción no debe superar los 1000 caracteres')
@@ -287,6 +290,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', id, open }: Props
             setStatus(prev => {
                 const newPrev = data?.result || [];
                 const preWithoutOther = prev.filter(p => p._id !== 'Other');
+
                 return [...preWithoutOther, ...newPrev, { name: 'Otro', _id: 'Other' }]
             })
         } catch (error) {
@@ -415,31 +419,39 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', id, open }: Props
                 setCategory(prev => {
                     const exists = prev.some(c => c._id === res.data?.category._id)
                     if (!exists && res.data?.category) {
+
                         return [res.data.category, ...prev];
                     }
+
                     return prev;
 
                 })
                 setLocation(prev => {
                     const exists = prev.some(l => l._id === res.data?.location._id)
                     if (!exists && res.data?.location) {
-                        return [res.data.location, ...prev]
+
+                        return [res.data.location, ...prev];
                     }
-                    return prev
+
+                    return prev;
                 })
                 setStatus(prev => {
                     const exists = prev.some(s => s._id === res.data?.status._id);
                     if (!exists && res.data?.status) {
-                        return [res.data.status, ...prev]
+
+                        return [res.data.status, ...prev];
                     }
-                    return prev
+
+                    return prev;
                 })
                 setResponsable(prev => {
                     const exists = prev.some(r => r._id === res.data?.responsable._id);
                     if (!exists && res.data.responsable) {
-                        return [res.data.responsable, ...prev]
+
+                        return [res.data.responsable, ...prev];
                     }
-                    return prev
+
+                    return prev;
                 })
                 reset({ ...res.data, date_a: form_a })
                 setImagePre(`${baseUrl().backendURI}/images/${res.data?.imageUrl}`)
@@ -453,6 +465,7 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', id, open }: Props
     }, [open, mode, id])
 
     useEffect(() => {
+
         return () => {
             if (imagePrev) URL.revokeObjectURL(imagePrev);
         };
@@ -510,7 +523,6 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', id, open }: Props
         setValue('image', null);
         clearErrors('image');
     };
-
 
     return (<Box>
         <form autoComplete="off" onSubmit={handleSubmit(onSubmit)}>
@@ -670,7 +682,8 @@ const AddActivos = ({ toggle, page, pageSize, mode = 'create', id, open }: Props
                                             const selectedId = e.target.value as string
                                             if (selectedId === 'Other') {
                                                 onChange({ name: 'OTRO', _id: 'Other' })
-                                                return
+
+                                                return;
                                             }
 
                                             const selectedLocation = location.find((loc) => loc._id === selectedId) || null

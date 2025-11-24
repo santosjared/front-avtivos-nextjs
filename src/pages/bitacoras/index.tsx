@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux'
 import Icon from 'src/@core/components/icon'
 import { RootState, AppDispatch } from 'src/store'
 import { useSelector } from 'react-redux'
-import { GradeType, UserType } from 'src/types/types'
+import { UserType } from 'src/types/types'
 import { format } from 'date-fns'
 import { fetchData } from 'src/store/bitacoras'
 
@@ -24,6 +24,7 @@ interface CellType {
 
 const safe = (txt?: string) => txt || "";
 const fullName = (u: UserType | null) => {
+
     return [
         safe(u?.grade?.name),
         safe(u?.name),
@@ -71,6 +72,7 @@ const columns = [
         field: 'action',
         headerName: 'Accion',
         renderCell: ({ row }: CellType) => {
+
             return (
                 <Tooltip title={row.action}>
                     <Typography variant='body2' noWrap>{row.action}</Typography>
@@ -85,6 +87,7 @@ const columns = [
         field: 'metod',
         headerName: 'Metodo',
         renderCell: ({ row }: CellType) => {
+
             return (
                 <Tooltip title={row.method}>
                     <Typography variant='body2' noWrap>{row.method}</Typography>
@@ -175,7 +178,6 @@ const Bitacoras = () => {
     const handleFilters = (field: string) => {
         dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
     }
-
 
     return (
         <Grid container spacing={6}>

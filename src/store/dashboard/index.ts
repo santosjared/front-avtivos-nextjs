@@ -1,15 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { instance } from "src/configs/axios";
-import { UserType } from "src/types/types";
 import Swal from 'sweetalert2'
-
-interface BitacorasType {
-    user: UserType | null
-    action: string
-    method: string
-    logs: string
-    createdAt: string
-}
 
 interface totalStatusType {
     status: string
@@ -47,7 +38,8 @@ const initialState: InitialStateType = {
 export const fetchData = createAsyncThunk('bitacoras/fetchData', async () => {
     try {
         const response = await instance.get('/dashboard');
-        return response.data
+
+        return response.data;
     } catch (e: any) {
         console.log(e);
         Swal.fire({
@@ -56,6 +48,7 @@ export const fetchData = createAsyncThunk('bitacoras/fetchData', async () => {
                 }. Por favor, comuníquese con el administrador del sistema.`,
             icon: 'error',
         });
+
         return null
     }
 })

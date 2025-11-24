@@ -80,7 +80,8 @@ const Trazabildad = ({ id, open, toggle }: props) => {
     }, [id, open])
 
     const formaDate = (fecha: string) => {
-        const date = new Date(fecha)
+        const date = new Date(fecha);
+
         return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
     }
 

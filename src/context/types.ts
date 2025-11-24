@@ -1,4 +1,3 @@
-import { GradeType } from "src/types/types"
 
 export type ErrCallbackType = (err: { [key: string]: string }) => void
 

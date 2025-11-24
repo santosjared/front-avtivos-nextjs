@@ -46,7 +46,6 @@ const schema = yup.object().shape({
 
 const AddRol = ({ toggle, page, pageSize, mode = 'create', id }: Props) => {
 
-
     const theme = useTheme()
     const dispatch = useDispatch<AppDispatch>()
 

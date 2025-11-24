@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux'
 import Icon from 'src/@core/components/icon'
 import { RootState, AppDispatch } from 'src/store'
 import { useSelector } from 'react-redux'
-import { GradeType, UserType } from 'src/types/types'
+import { UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
 import { deleteEntrega, fetchData } from 'src/store/entrega'
 import { styled } from '@mui/material/styles'
@@ -21,59 +21,6 @@ import { setState } from 'src/store/devolver'
 interface LocationType {
     _id: string
     name: string
-}
-
-interface RegisterType {
-    date: string
-    time: string
-    grade: GradeType | null
-    name: string
-    lastName: string
-    location: LocationType | null
-    description: string
-    otherLocation: string
-    otherGrade: string
-
-}
-
-interface SubCategoryType {
-    _id?: string
-    name: string
-    util: number
-}
-
-interface ContableType {
-    _id: string
-    name: string,
-    util: number,
-    subcategory: SubCategoryType[]
-    description?: string
-}
-
-interface StatusType {
-    _id: string
-    name: string
-}
-
-interface ResponsableType {
-    _id: string
-    grade: GradeType
-    name: string
-    lastName: string
-}
-
-interface ActivosType {
-    _id?: string
-    code: string,
-    responsable: ResponsableType | null,
-    name: string,
-    location: LocationType | null,
-    price_a: number,
-    date_a: string,
-    imageUrl: string | null,
-    status: StatusType | null
-    category: ContableType | null
-    subcategory: SubCategoryType | null
 }
 
 interface EntregaType {
@@ -123,6 +70,12 @@ const Borrowing = () => {
     const handleFilters = (field: string) => {
         dispatch(fetchData({ field, skip: page * pageSize, limit: pageSize }))
     }
+
+    const handleCreate = () => {
+        setMode('create')
+        setCode('')
+        toggleRegister()
+    }
     const columns = [
         {
             flex: 0.09,
@@ -130,6 +83,7 @@ const Borrowing = () => {
             field: 'code',
             headerName: 'Código de entrega',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.code}>
                         <Typography variant='body2' noWrap>{row.code}</Typography>
@@ -145,6 +99,7 @@ const Borrowing = () => {
             renderCell: ({ row }: CellType) => {
                 const date = new Date(row.date)
                 const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+
                 return (
                     <Tooltip title={formatted}>
                         <Typography variant='body2' noWrap>{formatted}</Typography>
@@ -158,6 +113,7 @@ const Borrowing = () => {
             field: 'hrs',
             headerName: 'Hora de la entrega ',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.time}>
                         <Typography variant='body2' noWrap>{row.time}</Typography>
@@ -173,6 +129,7 @@ const Borrowing = () => {
             headerName: 'Usuario que entrega',
             renderCell: ({ row }: CellType) => {
                 const fullname = `${row.user_en?.grade?.name || ''} ${row.user_en?.name || ''} ${row.user_en?.lastName || ''}`
+
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -188,6 +145,7 @@ const Borrowing = () => {
             headerName: 'Usuario que recibe',
             renderCell: ({ row }: CellType) => {
                 const fullname = `${row.user_rec?.grade?.name || ''} ${row.user_rec?.name || ''} ${row.user_rec?.lastName || ''}`
+
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -202,6 +160,7 @@ const Borrowing = () => {
             field: 'location',
             headerName: 'ubicacion',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.location?.name}>
                         <Typography variant='body2' noWrap>{row.location?.name}</Typography>
@@ -216,6 +175,7 @@ const Borrowing = () => {
             field: 'document',
             headerName: 'Documento',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <>
                         {row.documentUrl ? <Typography noWrap variant='body2' component={StyledLink}
@@ -240,6 +200,7 @@ const Borrowing = () => {
             field: 'description',
             headerName: 'Descripción',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.description}>
                         <Typography variant='body2' noWrap>{row.description}</Typography>
@@ -255,6 +216,7 @@ const Borrowing = () => {
             sortable: false,
             headerName: 'Acciones',
             renderCell: ({ row }: CellType) => {
+
                 return (<RowOptions entrega={row} />)
             }
         }
@@ -434,7 +396,7 @@ const Borrowing = () => {
                                     </Box>
                                     <Can I='create' a='entrega'>
                                         <Button
-                                            onClick={toggleRegister}
+                                            onClick={handleCreate}
                                             variant="contained"
                                             color='success'
                                             startIcon={<Icon icon='mdi:add' />}

@@ -1,5 +1,5 @@
-import { Box, Card, CardContent, Grid, Paper, Tooltip, Typography, useTheme } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Box, Card, CardContent, Grid, Tooltip, Typography, useTheme } from "@mui/material";
+import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import Icon from "src/@core/components/icon"

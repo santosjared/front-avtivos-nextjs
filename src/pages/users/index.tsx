@@ -103,6 +103,7 @@ const Users = () => {
             field: 'grade',
             headerName: 'Grado',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.grade ? row.grade.name : row.otherGrade || 'Ninguno'}>
                         <Typography variant='body2' noWrap>
@@ -118,6 +119,7 @@ const Users = () => {
             field: 'name',
             headerName: 'Nombres',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.name}>
                         <Typography variant='body2' noWrap>{row.name}</Typography>
@@ -131,6 +133,7 @@ const Users = () => {
             field: 'lastname',
             headerName: 'Apellidos',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.lastName}>
                         <Typography variant='body2' noWrap>{row.lastName}</Typography>
@@ -145,6 +148,7 @@ const Users = () => {
             sortable: false,
             headerName: 'CI',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.ci}>
                         <Typography variant='body2' noWrap>{row.ci}</Typography>
@@ -158,6 +162,7 @@ const Users = () => {
             field: 'exp',
             headerName: 'Expedido',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.exp}>
                         <Typography variant='body2'>{row.exp}</Typography>
@@ -172,6 +177,7 @@ const Users = () => {
             sortable: false,
             headerName: 'Dirección',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.address}>
                         <Typography variant='body2' noWrap>{row.address}</Typography>
@@ -186,6 +192,7 @@ const Users = () => {
             sortable: false,
             headerName: 'Celular',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.phone}>
                         <Typography noWrap variant='body2'>{row.phone}</Typography>
@@ -200,6 +207,7 @@ const Users = () => {
             sortable: false,
             headerName: 'Género',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.gender}>
                         <Typography noWrap variant='body2'>{row.gender}</Typography>
@@ -214,6 +222,7 @@ const Users = () => {
             sortable: false,
             headerName: 'email',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.email}>
                         <Typography noWrap variant='body2'>{row.email}</Typography>
@@ -291,6 +300,7 @@ const Users = () => {
             sortable: false,
             headerName: 'Acciones',
             renderCell: ({ row }: CellType) => {
+
                 return (<RowOptions user={row} />)
             }
         }
@@ -351,7 +361,6 @@ const Users = () => {
             setAnchorEl(null);
             toggleDrawer();
         };
-
 
         return (
             <>

@@ -12,8 +12,9 @@ export const fetchData = createAsyncThunk('rol/fetchRol',
         try {
             const response = await instance.get('/roles', {
                 params: filters
-            })
-            return response.data
+            });
+
+            return response.data;
         } catch (e) {
             console.log(e)
             Swal.fire({
@@ -21,7 +22,8 @@ export const fetchData = createAsyncThunk('rol/fetchRol',
                 text: 'Se ha producido un error al intentar traer los roles. Contacte al desarrollador del sistema para más asistencia.',
                 icon: "error"
             });
-            return null
+
+            return null;
         }
     }
 );
@@ -35,8 +37,9 @@ export const addRol = createAsyncThunk('rol/addRol',
                 text: 'Datos guardados exitosamente',
                 icon: "success"
             });
-            dispatch(fetchData(data.filtrs))
-            return response
+            dispatch(fetchData(data.filtrs));
+
+            return response;
         } catch (e) {
             console.log(e)
             Swal.fire({
@@ -57,8 +60,9 @@ export const updateRol = createAsyncThunk('rol/updateRol',
                 text: 'Datos actualizados exitosamente',
                 icon: "success"
             });
-            dispatch(fetchData(data.filtrs))
-            return response
+            dispatch(fetchData(data.filtrs));
+
+            return response;
         } catch (e) {
             console.log(e)
             Swal.fire({
@@ -78,8 +82,9 @@ export const deleteRol = createAsyncThunk('rol/deleteRol', async (data: { [key: 
             text: 'El rol fue eliminado exitosamente',
             icon: "success"
         });
-        dispatch(fetchData(data.filtrs))
-        return response
+        dispatch(fetchData(data.filtrs));
+
+        return response;
     } catch (e) {
         console.log(e)
         Swal.fire({

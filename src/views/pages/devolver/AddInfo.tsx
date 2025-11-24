@@ -1,5 +1,5 @@
 
-import { Box, Button, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography, useTheme } from "@mui/material"
+import { Box, Button, FormControl, FormHelperText, Grid, TextField, Typography, useTheme } from "@mui/material"
 import { useEffect } from "react"
 import Icon from 'src/@core/components/icon'
 import * as yup from 'yup'
@@ -62,6 +62,7 @@ const schema = yup.object().shape({
         .transform(value => value ?? '')
         .test('empty-or-valid', 'La descripción debe tener al menos 10 caracteres', value => {
             if (!value) return true;
+
             return value.trim().length >= 10;
         })
         .max(1000, 'La descripción no debe superar los 1000 caracteres')

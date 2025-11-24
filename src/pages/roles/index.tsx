@@ -105,6 +105,7 @@ const Roles = () => {
             sortable: false,
             headerName: 'Rol',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.name}>
                         <Typography variant='body2' noWrap>{row.name}</Typography>
@@ -119,6 +120,7 @@ const Roles = () => {
             sortable: false,
             headerName: 'Descripción',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.description}>
                         <Typography variant='body2' noWrap>{row.description}</Typography>
@@ -133,10 +135,12 @@ const Roles = () => {
             sortable: false,
             headerName: 'Acciones',
             renderCell: ({ row }: CellType) => {
+
                 return (<RowOptions rol={row} />)
             }
         }
     ]
+
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>

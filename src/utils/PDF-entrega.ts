@@ -401,6 +401,7 @@ export const PDFEntrega = (info: InfoEntegaType | null, activos: ActivosType[]) 
 const formatear = (f: string | Date) => {
     const fecha = new Date(f);
     const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
     return `${fecha.getDate()} de ${meses[fecha.getMonth()]} de ${fecha.getFullYear()}`;
 };
 

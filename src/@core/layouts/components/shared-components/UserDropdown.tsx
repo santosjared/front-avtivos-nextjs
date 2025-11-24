@@ -10,14 +10,9 @@ import { styled } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import Icon from 'src/@core/components/icon'
 import { useAuth } from 'src/hooks/useAuth'
-import { Settings } from 'src/@core/context/settingsContext'
 import { useSelector } from 'react-redux'
 import { RootState } from 'src/store'
 import getConfig from 'src/configs/environment'
-
-interface Props {
-  settings: Settings
-}
 
 const BadgeContentSpan = styled('span')(({ theme }) => ({
   width: 8,
@@ -27,16 +22,14 @@ const BadgeContentSpan = styled('span')(({ theme }) => ({
   boxShadow: `0 0 0 2px ${theme.palette.background.paper}`
 }))
 
-const UserDropdown = (props: Props) => {
-  const { settings } = props
+const UserDropdown = () => {
 
   const [anchorEl, setAnchorEl] = useState<Element | null>(null)
 
   const router = useRouter()
   const { logout } = useAuth()
-  const { user } = useSelector((state: RootState) => state.auth)
 
-  const { direction } = settings
+  const { user } = useSelector((state: RootState) => state.auth)
 
   const handleDropdownOpen = (event: SyntheticEvent) => {
     setAnchorEl(event.currentTarget)
@@ -78,8 +71,8 @@ const UserDropdown = (props: Props) => {
         open={Boolean(anchorEl)}
         onClose={() => handleDropdownClose()}
         sx={{ '& .MuiMenu-paper': { width: 230, mt: 4 } }}
-        anchorOrigin={{ vertical: 'bottom', horizontal: direction === 'ltr' ? 'right' : 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: direction === 'ltr' ? 'right' : 'left' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
         <Box sx={{ pt: 2, pb: 3, px: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>

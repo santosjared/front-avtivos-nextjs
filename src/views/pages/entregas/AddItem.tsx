@@ -86,6 +86,7 @@ const Transition = forwardRef(function Transition(
     props: FadeProps & { children?: ReactElement<any, any> },
     ref: Ref<unknown>
 ) {
+
     return <Fade ref={ref} {...props} />
 })
 
@@ -131,7 +132,8 @@ const AddItem = ({ open, toggle, setSelectActivos }: Props) => {
         } catch (e) {
             console.log(e)
         }
-    }
+    };
+
     return (
         <Dialog
             fullWidth

@@ -1,5 +1,3 @@
-import { Direction } from '@mui/material'
-
 import {
   Mode,
   VerticalNavToggle,
@@ -38,7 +36,7 @@ const themeConfig: ThemeConfig = {
   beforeVerticalNavMenuContentPosition: 'fixed',
   responsiveFontSizes: true,
   disableRipple: false,
-  toastPosition: 'top-right' /* top-left | top-center | top-right | bottom-left | bottom-center | bottom-right */
+  toastPosition: 'top-right'
 }
 
 export default themeConfig

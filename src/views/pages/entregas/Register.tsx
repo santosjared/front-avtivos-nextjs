@@ -95,9 +95,6 @@ interface CellType {
     row: ActivosType
 }
 
-interface CellType {
-    row: ActivosType
-}
 
 interface Props {
     toggle: () => void
@@ -115,6 +112,7 @@ const Register = ({ page, limit, mode = 'create', code, open, toggle }: Props) =
     const [fileError, setFileError] = useState<string | null>(null);
     const [entrega, setEntrega] = useState<InfoEntegaType | null>(null)
     const [selectActivos, setSelectActivos] = useState<ActivosType[]>([])
+    const [activosBeforeCancel, setActivosBeforeCancel] = useState<ActivosType[]>([])
     const [openInfo, setOpenInfo] = useState<boolean>(false)
     const [openAdduser, setOpenAddUser] = useState<boolean>(false)
     const [openAddItem, setOpenAddItem] = useState<boolean>(false)
@@ -244,7 +242,11 @@ const Register = ({ page, limit, mode = 'create', code, open, toggle }: Props) =
 
     const handleDelete = async (id: string) => {
         try {
-            const res = await instance.put(`/activos/enable/${id}`)
+            const res = await instance.put(`/activos/enable`,
+                {
+                    activos: [id]
+                }
+            )
             if (res.data?.ok) {
                 setSelectActivos(prev => prev.filter(item => item._id !== id));
             }
@@ -295,6 +297,7 @@ const Register = ({ page, limit, mode = 'create', code, open, toggle }: Props) =
                 const { activos, ...rest } = res.data
                 setEntrega(rest || null);
                 setSelectActivos(activos || [])
+                setActivosBeforeCancel(activos || [])
             } catch (e) {
                 console.log(e)
             }
@@ -304,10 +307,37 @@ const Register = ({ page, limit, mode = 'create', code, open, toggle }: Props) =
         }
     }, [open, code, mode])
 
-    const handleCancel = () => {
-        setFile(null);
-        setEntrega(null);
-        toggle();
+    const handleCancel = async () => {
+        if (mode === 'create') {
+            const selectActivosIds = selectActivos.map(activo => activo._id);
+            try {
+                await instance.put(`/activos/enable`,
+                    {
+                        activos: selectActivosIds
+                    }
+                );
+            } catch (e) {
+                console.log(e)
+            } finally {
+                setFile(null);
+                setEntrega(null);
+                toggle();
+            }
+        } else {
+            try {
+                const activosIds = activosBeforeCancel.map(activo => activo._id)
+                await instance.put('/activos/disabled', {
+                    activos: activosIds
+                })
+            } catch (e) {
+                console.log(e)
+            } finally {
+                setFile(null);
+                setEntrega(null);
+                toggle();
+            }
+
+        }
     }
 
     useEffect(() => {
@@ -411,7 +441,7 @@ const Register = ({ page, limit, mode = 'create', code, open, toggle }: Props) =
             <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2, pr: 2 }}>
                 <Typography variant="h5" sx={{ pl: 2, pt: 2, color: theme.palette.text.secondary }}>AGREGAR ENTREGA DE ACTIVOS</Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center', gap: 2 }}>
-                    <IconButton size='small' color="secondary" onClick={toggle}>
+                    <IconButton size='small' color="secondary" onClick={handleCancel}>
                         <Icon icon='mdi:close' fontSize={20} />
                     </IconButton>
                 </Box>
@@ -476,7 +506,8 @@ const Register = ({ page, limit, mode = 'create', code, open, toggle }: Props) =
                                     <strong>Fecha de entrega:</strong>{' '}
                                     {entrega?.date ? (() => {
                                         const date = new Date(entrega?.date)
-                                        const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+                                        const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+
                                         return formatted
                                     })() : null}
                                 </Typography>

@@ -1,10 +1,5 @@
-// ** React Imports
 import { ReactNode, useContext } from 'react'
-
-// ** Component Imports
 import { AbilityContext } from 'src/layouts/components/acl/Can'
-
-// ** Types
 import { NavGroup, NavLink } from 'src/@core/layouts/types'
 
 interface Props {
@@ -13,13 +8,11 @@ interface Props {
 }
 
 const CanViewNavGroup = (props: Props) => {
-  // ** Props
   const { children, navGroup } = props
-
-  // ** Hook
   const ability = useContext(AbilityContext)
 
   const checkForVisibleChild = (arr: NavLink[] | NavGroup[]): boolean => {
+
     return arr.some((i: NavGroup) => {
       if (i.children) {
         return checkForVisibleChild(i.children)
@@ -38,6 +31,7 @@ const CanViewNavGroup = (props: Props) => {
 
     return ability && ability.can(item.action, item.subject) && hasAnyVisibleChild
   }
+
   return navGroup && canViewMenuGroup(navGroup) ? <>{children}</> : null
 }
 

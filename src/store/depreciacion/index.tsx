@@ -2,14 +2,12 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { instance } from "src/configs/axios";
 import Swal from 'sweetalert2'
 
-
 interface FetchParams {
     skip?: number
     limit?: number
     fecha_final: string
     fecha_compra: string
 }
-
 
 interface DepreciacionType {
     _id?: string
@@ -35,15 +33,15 @@ const initialState: InicialStateType = {
     total: 0,
 }
 
-
 export const fetchData = createAsyncThunk(
     'depreciacion/fetchData',
     async (filters?: FetchParams) => {
         try {
             const response = await instance.get('/depreciacion', {
                 params: filters,
-            })
-            return response.data
+            });
+
+            return response.data;
         } catch (e: any) {
             console.log(e)
             Swal.fire({
@@ -52,7 +50,8 @@ export const fetchData = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
-            return null
+
+            return null;
         }
     }
 )

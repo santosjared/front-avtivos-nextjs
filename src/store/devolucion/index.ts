@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { instance } from 'src/configs/axios'
 import { GradeType, UserType } from 'src/types/types'
 import Swal from 'sweetalert2'
@@ -80,7 +80,8 @@ export const fetchData = createAsyncThunk(
             const response = await instance.get('/devolucion', {
                 params: filters,
             })
-            return response.data
+
+            return response.data;
         } catch (e: any) {
             console.log(e)
             Swal.fire({
@@ -89,6 +90,7 @@ export const fetchData = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
+
             return null
         }
     }
@@ -109,8 +111,9 @@ export const addDevolucion = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filters))
-            return response.data
+            dispatch(fetchData(data.filters));
+
+            return response.data;
         } catch (e: any) {
             console.log(e)
             Swal.fire({
@@ -119,7 +122,8 @@ export const addDevolucion = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
-            return null
+
+            return null;
         }
     }
 )
@@ -139,8 +143,9 @@ export const updateDevolucion = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filters))
-            return response.data
+            dispatch(fetchData(data.filters));
+
+            return response.data;
         } catch (e: any) {
             console.log(e)
             Swal.fire({
@@ -149,7 +154,8 @@ export const updateDevolucion = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
-            return null
+
+            return null;
         }
     }
 )
@@ -166,8 +172,9 @@ export const deleteDevolucion = createAsyncThunk(
                 icon: 'success',
             })
 
-            dispatch(fetchData(data.filters))
-            return response.data
+            dispatch(fetchData(data.filters));
+
+            return response.data;
         } catch (e: any) {
             console.log(e)
             Swal.fire({
@@ -176,7 +183,8 @@ export const deleteDevolucion = createAsyncThunk(
                     }. Por favor, comuníquese con el administrador del sistema.`,
                 icon: 'error',
             });
-            return null
+
+            return null;
         }
     }
 )

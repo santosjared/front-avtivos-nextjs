@@ -142,6 +142,7 @@ const Contable = () => {
             field: 'name',
             headerName: 'Categoría',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Typography variant='body2'>{row.name}</Typography>
                 )
@@ -153,6 +154,7 @@ const Contable = () => {
             field: 'util',
             headerName: 'Vida útil',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Typography variant='body2'>{row.util}</Typography>
                 )
@@ -164,6 +166,7 @@ const Contable = () => {
             field: 'description',
             headerName: 'Descripción',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Typography variant='body2'>{row.description}</Typography>
                 )
@@ -176,11 +179,13 @@ const Contable = () => {
             sortable: false,
             headerName: 'Acciones',
             renderCell: ({ row }: CellType) => {
+
                 return (<RowOptions contable={row} />)
             }
         }
 
     ]
+
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>
@@ -307,6 +312,7 @@ const Contable = () => {
                         onPageChange={(newPage) => setPage(newPage)}
                         onCellClick={(params) => {
                             if (params.field === 'actions') {
+
                                 return
                             }
                             setId(params.row._id)

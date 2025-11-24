@@ -131,6 +131,7 @@ const AddUser = ({ toggle, open, entrega, setEntrega }: Props) => {
 
             setGrades(prev => {
                 const merged = [...prev, ...(data.result || [])];
+
                 return merged.filter(
                     (item, index, arr) =>
                         index === arr.findIndex(i => i._id === item._id)
@@ -306,6 +307,7 @@ const AddUser = ({ toggle, open, entrega, setEntrega }: Props) => {
                                                             const selectedId = e.target.value;
                                                             if (selectedId === 'Other') {
                                                                 onChange({ name: 'Otro', _id: 'Other' });
+
                                                                 return;
                                                             }
                                                             const selectedGrade = grades.find(g => g._id === selectedId) || null;

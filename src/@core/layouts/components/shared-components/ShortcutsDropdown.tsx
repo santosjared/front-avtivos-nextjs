@@ -78,17 +78,9 @@ const ScrollWrapper = ({ children, hidden }: { children: ReactNode; hidden: bool
 }
 
 const ShortcutsDropdown = (props: Props) => {
-  // ** Props
-  const { shortcuts, settings } = props
-
-  // ** States
+  const { shortcuts } = props
   const [anchorEl, setAnchorEl] = useState<(EventTarget & Element) | null>(null)
-
-  // ** Hook
   const hidden = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'))
-
-  // ** Vars
-  const { direction } = settings
 
   const handleDropdownOpen = (event: SyntheticEvent) => {
     setAnchorEl(event.currentTarget)
@@ -107,8 +99,8 @@ const ShortcutsDropdown = (props: Props) => {
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleDropdownClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: direction === 'ltr' ? 'right' : 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: direction === 'ltr' ? 'right' : 'left' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
         <MenuItem
           disableRipple

@@ -11,7 +11,7 @@ import { styled } from '@mui/material/styles'
 import Link from 'next/link'
 import getConfig from 'src/configs/environment'
 import Entregas from 'src/views/pages/devolucion/entregas'
-import { deleteDevolucion, fetchData } from 'src/store/devolucion'
+import { fetchData } from 'src/store/devolucion'
 import { instance } from 'src/configs/axios'
 import { PDFDevuelto } from 'src/utils/PDF-devuelto'
 import { setState } from 'src/store/devolver'
@@ -21,19 +21,6 @@ import Can from 'src/layouts/components/acl/Can'
 interface LocationType {
     _id: string
     name: string
-}
-
-interface RegisterType {
-    date: string
-    time: string
-    grade: GradeType | null
-    name: string
-    lastName: string
-    location: LocationType | null
-    description: string
-    otherLocation: string
-    otherGrade: string
-
 }
 
 interface SubCategoryType {
@@ -131,6 +118,7 @@ const Devolucion = () => {
             field: 'code',
             headerName: 'Código de entrega',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.code}>
                         <Typography variant='body2' noWrap>{row.code}</Typography>
@@ -146,6 +134,7 @@ const Devolucion = () => {
             renderCell: ({ row }: CellType) => {
                 const date = new Date(row.date)
                 const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+
                 return (
                     <Tooltip title={formatted}>
                         <Typography variant='body2' noWrap>{formatted}</Typography>
@@ -159,6 +148,7 @@ const Devolucion = () => {
             field: 'hrs',
             headerName: 'Hora de devolución',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.time}>
                         <Typography variant='body2' noWrap>{row.time}</Typography>
@@ -174,6 +164,7 @@ const Devolucion = () => {
             headerName: 'Usuario que devuelve',
             renderCell: ({ row }: CellType) => {
                 const fullname = `${row.user_dev?.grade?.name || ''} ${row.user_dev?.name || ''} ${row.user_dev?.lastName || ''}`
+
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -189,6 +180,7 @@ const Devolucion = () => {
             headerName: 'Usuario que recibe',
             renderCell: ({ row }: CellType) => {
                 const fullname = `${row.user_rec?.grade?.name || ''} ${row.user_rec?.name || ''} ${row.user_rec?.lastName || ''}`
+
                 return (
                     <Tooltip title={fullname}>
                         <Typography variant='body2' noWrap>{fullname}</Typography>
@@ -203,6 +195,7 @@ const Devolucion = () => {
             field: 'document',
             headerName: 'Documento',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <>
                         {row.documentUrl ? <Typography noWrap variant='body2' component={StyledLink}
@@ -227,6 +220,7 @@ const Devolucion = () => {
             field: 'description',
             headerName: 'Descripción',
             renderCell: ({ row }: CellType) => {
+
                 return (
                     <Tooltip title={row.description}>
                         <Typography variant='body2' noWrap>{row.description}</Typography>
@@ -242,6 +236,7 @@ const Devolucion = () => {
             sortable: false,
             headerName: 'Acciones',
             renderCell: ({ row }: CellType) => {
+
                 return (<RowOptions devolucion={row} />)
             }
         }
@@ -319,6 +314,7 @@ const Devolucion = () => {
             </>
         )
     }
+
     return (
         <>
             {openEntrega ? <Entregas toggle={toggle} /> :

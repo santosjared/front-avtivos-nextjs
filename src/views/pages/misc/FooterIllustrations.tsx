@@ -37,6 +37,7 @@ const FooterIllustrations = (props: FooterIllustrationsProp) => {
   const src = image || '/images/pages/misc-coming-soon-object.png'
 
   if (!hidden) {
+
     return (
       <>
         <ShapeImg alt='shape' src={src} />
@@ -44,6 +45,7 @@ const FooterIllustrations = (props: FooterIllustrationsProp) => {
       </>
     )
   } else {
+
     return null
   }
 }

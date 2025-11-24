@@ -97,6 +97,7 @@ const Transition = forwardRef(function Transition(
     props: FadeProps & { children?: ReactElement<any, any> },
     ref: Ref<unknown>
 ) {
+
     return <Fade ref={ref} {...props} />
 })
 
@@ -125,7 +126,8 @@ const SelectActivos = ({ openpage, toggle, setSelectActivos, activos, selectActi
 
     const handleFilters = async (field: string) => {
         const result = activos?.filter(item => {
-            const texto = JSON.stringify(item).toLowerCase()
+            const texto = JSON.stringify(item).toLowerCase();
+
             return texto.includes(field.toLowerCase())
         })
         const actAbilaibles = result.filter(a => !selectActivos.some(s => s._id === a._id))
@@ -190,7 +192,8 @@ const SelectActivos = ({ openpage, toggle, setSelectActivos, activos, selectActi
                 setMessage(prev => [...prev, `El Activo ya esta agregado, Codigo del activo: ${a.code}`])
                 err = true;
             }
-            return !exists
+
+            return !exists;
         })
         if (!err) {
             setSelectActivos(prev => [...prev, ...(actAvalaibles || [])])
@@ -260,7 +263,8 @@ const SelectActivos = ({ openpage, toggle, setSelectActivos, activos, selectActi
                 </Tooltip>
             )
         },
-    ]
+    ];
+
     return (
         <Dialog
             fullWidth

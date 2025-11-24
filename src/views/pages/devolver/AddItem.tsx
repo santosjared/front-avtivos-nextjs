@@ -20,7 +20,6 @@ import { styled } from '@mui/material/styles'
 import { GradeType } from 'src/types/types'
 import baseUrl from 'src/configs/environment'
 import CustomChip from 'src/@core/components/mui/chip'
-import { instance } from 'src/configs/axios'
 import { hexToRGBA } from "src/@core/utils/hex-to-rgba";
 
 interface SubCategoryType {
@@ -88,6 +87,7 @@ const Transition = forwardRef(function Transition(
     props: FadeProps & { children?: ReactElement<any, any> },
     ref: Ref<unknown>
 ) {
+
     return <Fade ref={ref} {...props} />
 })
 
@@ -117,6 +117,7 @@ const AddItem = ({ open, toggle, setSelectActivos, activos, selectActivos }: Pro
         const existsActivo = selectActivos.some(act => act.code === activo?.code)
         if (existsActivo) {
             setError('El Activo ya esta agregado');
+
             return;
         }
         if (activo) {
@@ -124,6 +125,7 @@ const AddItem = ({ open, toggle, setSelectActivos, activos, selectActivos }: Pro
         }
 
     }
+
     return (
         <Dialog
             fullWidth

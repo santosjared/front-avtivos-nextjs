@@ -32,6 +32,7 @@ const columns = [
         field: 'nombre',
         headerName: 'Nombre del activo',
         renderCell: ({ row }: CellType) => {
+
             return (
                 <Tooltip title={row.nombre}>
                     <Typography variant='body2' noWrap>{row.nombre}</Typography>
@@ -47,6 +48,7 @@ const columns = [
         renderCell: ({ row }: CellType) => {
             const date = new Date(row.fecha_a)
             const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+
             return (
                 <Tooltip title={formatted}>
                     <Typography variant='body2' noWrap>{formatted}</Typography>
@@ -60,6 +62,7 @@ const columns = [
         field: 'pricio_ac',
         headerName: 'Precio del activo',
         renderCell: ({ row }: CellType) => {
+
             return (
                 <Tooltip title={row.precio_ac}>
                     <Typography variant='body2' noWrap>{row.precio_ac}</Typography>
@@ -74,6 +77,7 @@ const columns = [
         field: 'ufv_inicial',
         headerName: 'UFV inicial',
         renderCell: ({ row }: CellType) => {
+
             return (
                 <Tooltip title={row.ufv_inicial}>
                     <Typography variant='body2' noWrap>{row.ufv_inicial}</Typography>
@@ -103,6 +107,7 @@ const columns = [
         field: 'diferencia_ufv',
         headerName: 'Diferencia UFV',
         renderCell: ({ row }: CellType) => {
+
             return (
                 <Tooltip title={row.diferencia_ufv}>
                     <Typography variant='body2' noWrap>{row.diferencia_ufv}</Typography>
@@ -117,6 +122,7 @@ const columns = [
         field: 'precio_actualizado',
         headerName: 'precio Actualizado',
         renderCell: ({ row }: CellType) => {
+
             return (
                 <Tooltip title={row.precio_actualizado}>
                     <Typography variant='body2' noWrap>{row.precio_actualizado}</Typography>
@@ -131,6 +137,7 @@ const columns = [
         field: 'deprec_acomulada',
         headerName: 'Depreciación acomulada',
         renderCell: ({ row }: CellType) => {
+
             return (
                 <Tooltip title={row.deprec_acomulada}>
                     <Typography variant='body2' noWrap>{row.deprec_acomulada}</Typography>
@@ -145,6 +152,7 @@ const columns = [
         field: 'neto',
         headerName: 'Valor Neto',
         renderCell: ({ row }: CellType) => {
+
             return (
                 <Tooltip title={row.neto}>
                     <Typography variant='body2' noWrap>{row.neto}</Typography>
@@ -192,6 +200,7 @@ const Depreciacion = () => {
     const handleCalcular = () => {
         dispatch(fetchData({ fecha_compra: fechaCompra, fecha_final: fechaFinal, skip: page * pageSize, limit: pageSize }))
     }
+
     return (
         <Grid container spacing={6}>
             <Grid item xs={12}>
